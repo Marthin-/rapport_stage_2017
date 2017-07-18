@@ -1,0 +1,197 @@
+%\documentclass[a4paper,11pt]{article}
+
+% Usefull modules
+\usepackage{graphicx}
+\usepackage{colortbl}
+\usepackage{array}
+\usepackage{eso-pic}
+\usepackage{listings}
+\usepackage{supertabular}
+\usepackage{setspace}
+\usepackage{framed}
+\usepackage[right]{eurosym}
+\usepackage{times}
+\usepackage{pstricks}
+\usepackage[tiling]{pst-fill}      % PSTricks package for filling/tiling
+\usepackage{pst-grad}              % PSTricks package for gradient filling
+\usepackage{pst-text}              % PSTricks package for charpath
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{tabu}
+\usepackage{grffile}
+
+% Include user defined values
+
+% Smile colors
+\definecolor{lightred}{RGB}{167,37,37}
+\definecolor{pastelred}{RGB}{254,230,230}
+\definecolor{lightorange}{RGB}{250,160,110}
+\definecolor{mediumblue}{RGB}{15,70,240}
+\definecolor{pastelblue}{RGB}{155,175,225}
+\definecolor{pastelgrey}{RGB}{242,242,242}
+\definecolor{lightorange}{RGB}{250,178,135}
+\definecolor{hardorange}{RGB}{255,102,0}
+
+% Smile colors
+\definecolor{smileorange}{RGB}{227,76,3}
+\definecolor{smilegrey}{RGB}{100,100,100}
+\definecolor{smilebgfile}{RGB}{255,230,190}
+\definecolor{smilebgcode}{RGB}{255,230,215}
+
+% Checkmark symbol
+\usepackage{amssymb}
+
+% Define margin values
+\usepackage[top=25mm,bottom=60mm,left=20mm,right=20mm]{geometry}
+
+% Set TOC depth
+\setcounter{tocdepth}{5}
+
+% Use sans-serif font by default
+\renewcommand{\normalfont}{\sffamily}
+
+% Interline
+\renewcommand{\baselinestretch}{1.5}
+
+% Police size
+\renewcommand{\footnotesize}{\small}
+
+% For hyperlink - No need with ReST
+%\usepackage[pdfstartview=FitH,bookmarksopen=true,pdfpagemode=UseOutlines,pdfcreator={Smile LaTeX Tools},pdftitle={},pdfauthor={},linkcolor=black,colorlinks=true,urlcolor=smileorange]{hyperref}
+
+% Section style
+\titleformat{\chapter}{\scshape\bf\Huge\color{smilegrey}}{\scshape \thechapter.~}{0pt}{}[\color{smileorange}\hrule\vspace*{1.5em}]
+\titlespacing{\chapter}{0pt}{-22pt}{*0}{}
+
+% Section style
+\titleformat{\section}{\scshape\bf\Large\color{smilegrey}}{\scshape \thesection.~}{0pt}{}[\color{smileorange}\hrule\vspace*{0.5em}]
+\titlespacing{\section}{0pt}{10pt}{*2}{}
+
+% Sub-section style
+\titleformat{\subsection}{\normalsize\bf\color{smilegrey}}{\thesubsection~}{0pt}{}[\color{smileorange}\hrule\vspace*{0.5em}]
+\titlespacing{\subsection}{0pt}{10pt}{*1}{}
+
+% Sub-sub-section style
+\titleformat{\subsubsection}{\normalsize\bf\color{smilegrey}}{\thesubsubsection~}{0pt}{}[]
+
+% Page style
+\pagestyle{fancy}
+\AddToShipoutPicture{\includegraphics[width=\paperwidth,height=\paperheight]{smile_bg.png}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% HEADER               %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Custom rule
+\renewcommand{\headrule}{%
+{{\color{smileorange}{\rule{\textwidth}{0.2mm}}}}}
+
+% Header size
+\setlength{\headheight}{2.5cm}
+
+% Include logo
+\lhead{\includegraphics[keepaspectratio=true,height=2cm]{smile_logo.png}}
+
+% Header orange box
+\rhead{\LARGE{\fcolorbox{hardorange}{lightorange}{Martin Guilloux - Rapport de stage}} \small{\it\bf{\color{smilegrey}{Autogénéré ladate}}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% FOOTER               %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Rule width
+\renewcommand{\footrulewidth}{0.2mm}
+
+\lfoot{}
+\rfoot{}
+\cfoot{\thepage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% OTHER                %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Textbox
+\newcommand{\boxtext}[2][0.98] {%
+    \fcolorbox{smileorange}{smilebgfile}{%
+        \begin{minipage}{#1\textwidth}
+        \vspace{10pt}
+        \begin{spacing}{1}
+        \textcolor{smileorange}{\texttt{#2}}
+        \end{spacing}
+        \end{minipage}
+    }
+    ~~\\
+}
+
+% Textbox warning
+\newcommand{\boxtextwarning}[2][0.98] {%
+    \fcolorbox{lightred}{pastelred}{%
+        \begin{minipage}{#1\textwidth}
+        \vspace{10pt}
+        \begin{spacing}{1}
+        \begin{tabular}{ m{1cm} m{17cm} }
+        \includegraphics[keepaspectratio=true,height=1cm]{warning.png} &  \textcolor{lightred}{\texttt{#2}}
+        \end{tabular}
+        \end{spacing}
+        \end{minipage}
+    }
+    ~~\\
+}
+
+% Textbox boxtextlegend
+\newcommand{\boxtextlegend}[2][0.98] {%
+    \fcolorbox{mediumblue}{pastelblue}{%
+        \begin{minipage}{#1\textwidth}
+        \vspace{10pt}
+        \begin{spacing}{1}
+        \textcolor{mediumblue}{\texttt{#2}}
+        \end{spacing}
+        \end{minipage}
+    }
+    ~~\\
+}
+
+% Boxcode (for good looking code bloc)
+\newcommand{\boxcode}[2][0.98] {%
+    \fcolorbox{smileorange}{smilebgcode}{%
+        \begin{minipage}{#1\textwidth}
+        \begin{flushright}
+        \textcolor{lightorange}{\normalsize{\textbf{\textit{<cmd>}}}}
+        \end{flushright}
+        \vspace{-12pt}
+        \begin{spacing}{1}
+        \textcolor{smileorange}{\texttt{#2}}
+        \end{spacing}
+        \end{minipage}
+    }
+    ~~\\
+}
+
+% Filebox (for good looking conf file)
+\newcommand{\boxfile}[2][0.98] {%
+    \fcolorbox{smileorange}{smilebgfile}{%
+        \begin{minipage}{#1\textwidth}
+        \begin{flushright}
+        \textcolor{lightorange}{\normalsize{\textbf{\textit{<conf>}}}}
+        \end{flushright}
+        \vspace{-12pt}
+        \begin{spacing}{1}
+        \textcolor{smileorange}{\texttt{#2}}
+        \end{spacing}
+        \end{minipage}
+    }
+    ~~\\
+}
+
+% Listings
+\lstset{basicstyle=\small,frame=lrbt,framexleftmargin=0cm, frame=shadowbox, rulecolor=\color{smileorange}, rulesepcolor=\color{lightgray}}
+
+% Beautiful tables
+\definecolor{tableHeader}{RGB}{250,178,135}
+\definecolor{tableLineOne}{RGB}{245,245,245}
+\definecolor{tableLineTwo}{RGB}{224,224,224}
+\newcommand{\tableHeaderStyle}{
+    \rowfont{\leavevmode\color{white}\bfseries}
+    \rowcolor{tableHeader}
+}

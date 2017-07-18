@@ -1,0 +1,208 @@
+\documentclass[12 pt]{report}
+
+\usepackage[utf8]{inputenc} %pour accents
+\usepackage[T1]{fontenc}	%pour accents
+\usepackage[francais]{babel}%pour langue
+\usepackage[textwidth=15cm,textheight=24cm]{geometry} %mise en page
+\usepackage{hyperref}	%URL
+\usepackage{listings}	%code
+\usepackage{amsmath}
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+
+\title{\textbf{Rapport de stage \\année scolaire 2015/2016}}
+\author{Martin Guilloux}
+\begin{document}
+\maketitle
+\chapter{Remerciements, Résumé du stage, Termes clés}
+\section{Remerciements}
+\paragraph{}Je tiens tout d'abord à remercier Jéremy Briffaut ainsi que toute l'équipe du LIFO pour leur accueil ainsi que pour les moyens mis à ma disposition pour mener à bien ma mission. Mes remerciements vont également aux autres stagiaires qui partageaient ma salle, pour avoir su créer une ambiance agréable et propice au travail.
+Merci aussi à Josh Datko, créateur du CryptoCape sur lequel j'ai travaillé, pour sa disponibilité et ses réponses à mes questions.
+
+\section{Résumé du stage}
+Mon stage au Laboratoire d'Informatique Fondamentale d'Orléans, qui s'intitulait \textbf{"Conception d'un protocole IoT DIY sécurisé"}, s'est déroulé tout au long de l'été 2016. Ma mission était double : Réaliser un état de l'art dans le milieu de la \textbf{sécurité domotique}, et concevoir un \textbf{protocole open-source} sécurisé de domotique \textbf{Do It Yourself}. Je me suis pour cela basé sur une bibliothèque (ensemble de fonctions) \textbf{Arduino} open-source existante, destinée à la domotique DIY : la bibliothèque \emph{MySensors}\footnote{\url{https://www.mysensors.org/}}, tout en implémentant moi-même une autre bibliothèque destinée à se greffer à MySensors pour y ajouter une part plus importante de sécurité dans l'utilisation quotidienne, sans pour autant rendre son utilisation plus difficile.
+
+
+\tableofcontents
+\chapter{Introduction}
+Dans le cadre de mes études à l'INSA Centre-Val-de-Loire, j'ai effectué mon stage de quatrième année au Laboratoire d'Informatique Fondamentale de Bourges, du 6 juin au 30 août 2016.
+
+Ma mission consistait à établir un état de l'art en sécurité IoT, ainsi qu'à concevoir un protocole IoT DIY ne souffrant pas des failles que j'ai pu découvrir par le biais de cet état de l'art. Pour cela j'ai utilisé des cartes Arduino et la bibliothèque open source \emph{MySensors}.
+
+La suite de ce rapport présentera à la fois le fonctionnement du LIFO, le déroulement de ma mission ainsi que mon retour d'expérience vis-à-vis de ce stage.
+
+
+\chapter{Présentation du LIFO, et contexte de ma mission}
+\section{Le Laboratoire d'Informatique Fondamentale d'Orléans, un laboratoire consacré aux technologies de l'information}
+Le Laboratoire d'Informatique Fondamentale d'Orléans (\textbf{LIFO}), à la fois laboratoire de l'université d'Orléans et de l'INSA CVL, compte environ 70 membres, presque entièrement constitué  d'enseignant-chercheurs et de doctorants. Il se divise en cinq équipes :
+\begin{itemize}
+\item{CA :} Contraintes et Apprentissage
+\item{GAMoC :} Graphes, Algoritmhes et Modèles de Calcul
+\item{LMV :} Logique, Modélisation et Vérification
+\item{Pamda :} Parallèlisme, Calcul distribué et Bases de Données
+\item{SDS :} Sécurité et Distribution des Systèmes
+\end{itemize}
+
+Les actions de recherche menées au LIFO concernent donc de nombreux domaines de l'informatique, dont on peut dégager trois thématiques principales : La gestion de masse des données, la modélisation et la sécurité informatique.
+
+L'équipe que j'ai assisté en tant que stagiaire, l'équipe Sécurité et Distribution des Systèmes, présente en grande majorité sur le site de Lahitolle (INSA CVL, Campus de Bourges), est centrée comme son nom l'indique sur des problématiques de sécurité et mène un certain nombre de projets dans ce secteur (procédures de chiffrement, visualisation de malware...)
+
+\section{La domotique : Un domaine en plein essor, mais peu sécurisé}
+L'Internet des Objets est un domaine florissant depuis quelques années. Bien qu'on ne puisse pas situer précisément son apparition dans le temps, des entreprises françaises comme Violet fondée en 2003 peuvent être considérées comme les précurseurs de ce domaine en France. Le secteur connaît une véritable explosion depuis les années 2010, et des géants comme Intel, IBM, Google ou Samsung investissent le domaine. En France ce sont les opérateurs téléphoniques qui proposent des services en rapport avec les objets connectés, tandis qu'un grand nombre de startup basent leur existence sur une gamme de produits connectés plus ou moins novateurs. On trouve à la fois des entreprises spécialisées dans un harware spécifique, et d'autres qui proposent en plus de matériel des protocoles pour l'Internet des Objets.
+\paragraph{}Domaine plus restreint de l'Internet des Objets, la domotique\footnote{"Ensemble des techniques visant à intégrer à l'habitat tous les automatismes en matière de sécurité, de gestion de l'énergie, de communication, etc."(Larousse, 2016)} se développe également de plus en plus, et tout un ecosystème d'entreprises comme ZigBee ou la Z-Wave Alliance se partagent ce marché avec de plus petites entreprises ou simplement des fabriquants de matériel.
+\paragraph{}Cependant, si ce domaine connaît une expansion extrêmement rapide, on ne peut pas en dire autant de la sécurité dans ce domaine. C'est dans ce contexte qu'intervient ma mission, réaliser un état de l'art de la sécurité dans ce domaine pour en dresser une vue d'ensemble et mieux en saisir les enjeux, ainsi que mettre en place un protocole de domotique sécurisé ne souffrant pas des failles identifiées de ses prédécesseurs afin de palier au déficit de sécurité dans ce domaine.
+
+\chapter{Entre l'informatique embarquée et la domotique : MySensors}
+\section{Deux missions complémentaires}
+\paragraph{}Au cours de mon stage, j'ai été amené à réaliser en parallèle deux missions complémentaires : Établir un état de l'art du domaine de la sécurité en domotique, et concevoir un protocole open-source de domotique sécurisée.
+\section{État de l'art du milieu de la sécurité domotique}
+\paragraph{}La première des deux missions qui m'a été confiée était la réalisation d'un bilan sur l'état de la sécurité en domotique à l'heure actuelle. Bien que de nombreux rapports et articles traitent de la sécurité d'un protocole donné, il est plus difficile de trouver des papiers synthétisant toutes ces informations pour dégager une vue d'ensemble de la situation actuelle, c'est pourquoi l'établissement d'un état de l'art s'avérait intéressant. De plus, les recherches que j'ai pu mener pour établir ce rapport m'ont également permis de mesurer les forces et les faiblesses de nombreux protocoles utilisés en domotique, pour pouvoir constater les avantages et les inconvénients de chacun et en tirer des leçons afin de concevoir un protocole qui ne souffre pas de failles déjà identifiées.
+
+
+\begin{figure}
+\center
+\includegraphics{zigbee}
+\caption{un schéma de réseau ZigBee classique}
+\end{figure}
+\paragraph{}Pour construire ce rapport j'ai commencé par recenser les protocoles les plus répandus et les plus utilisés de nos jours, étant à la fois les plus intéressants à étudier (du fait qu'ils touchent un plus grand public) et les plus susceptibles d'être correctement documentés. J'ai pu restreindre ma recherche à trois protocoles majoritairement utilisés actuellement : Z-Wave, ZigBee et MySensors. D'autres protocoles existent également mais les trois protocoles ci-dessus sont largement majoritaires en termes d'utilisation, à l'heure actuelle tout du moins. J'ai par exemple pu étudier des protocoles basés sur des transimissions via système électrique, à une époque où il était plus difficile de connecter un appareil à cause de l'absence de wi-fi, etc. Le fait de limiter mon champ d'étude m'a permis de creuser et analyser chacun de ces protocoles en détail pour en comprendre les avantages et inconvénients.
+
+\paragraph{}Après avoir consulté les documentations officielles de ces trois protocoles, ainsi que le code source dans le cas de MySensors (que j'avais eu l'occasion d'utiliser dans un projet précédent) et effectué une première analyse de ces protocoles, j'ai visionné des conférences spécialisées dans le domaine de la sécurité informatique (Black Hat, DEF CON...) où des experts présentaient des failles exploitables pour chaque protocole, analysant finement les erreurs et failles de programmation pour essayer d'apprendre des erreurs existantes. Les failles présentées étant le plus souvent expliquées de manière très détaillée, ces conférences m'ont beaucoup appris, à la fois sur la domotique et sur la sécurité informatique en général.
+\paragraph{}Une fois cette analyse effectuée, je me suis attelé à une étude comparative de ces protocoles pour en concevoir un qui réponde aux exigeances de sécurité non satisfaites par ceux-là, tout en sythétisant ces informations dans un rapport.\footnote{disponible en PDF, envoyez un mail à martin.guilloux@insa-cvl.fr}
+\paragraph{}Cet état de l'art m'a donc beaucoup servi dans ma deuxième mission :
+\newpage
+\section{Conception et implémentation d'un protocole IoT sécurisé}
+\paragraph{Conception :}\paragraph{}Une fois cernés les enjeux et les faiblesses des protocoles déjà existants j'ai pu m'atteler à la conception d'un protocole sécurisé ne souffrant pas des faiblesses de ses concurrents.
+\paragraph{}Pour cela je me suis appuyé sur le protocole MySensors déjà existant (et open-source) pour toute la partie concernant les échanges de données, la construction de réseau domotique et le lien avec l'interface de commande, afin de me concentrer uniquement sur la partie "sécurité" du problème. Ce protocole étant libre, il continue de connaître des évolutions (ce qui fut la source de quelques problèmes, voir le chapitre concernant mon retour d'expérience) et offre à la fois un accès simple au code source (hébergé en ligne) et la possibilité de discuter avec les développeurs sur le site internet du projet MySensors.
+\paragraph{}La version 1.5 de MySensors intégre la possibilité de faire de la \emph{signature de messages} afin de garantir que l'émetteur et le récepteur d'un message échangé sur le réseau sont bien ceux qu'ils prétendent être. Le fait que cette option soit déjà présente, ainsi que la possibilité de chiffrer des messages en AES-128 m'ont permis de gagner du temps sur le développement, une autre raison de préférer ce protocole à un autre.
+
+
+\begin{figure}[h!]
+\center
+\includegraphics[width=15cm]{mysensors.png}
+\caption{Un échange d'informations MySensors chiffré typique}
+\end{figure}
+
+\paragraph{}Une fois cette base choisie, j'ai réalisé une étude des besoins de sécurité d'un réseau domotique (dans le cas général), afin de distinguer les points qu'il me faudrait intégrer et les écueils que je pourrais rencontrer dans ma mission. J'ai pu dégager de cette étude les points importants et les grandes lignes qui m'ont permis de proposer une première version d'un protocole sécurisé.
+
+\paragraph{}Après discussion avec mon maître de stage pour voir les points à modifier, j'ai reçu un circuit imprimé (le BeagleBone CryptoCape) chargé de réaliser au niveau matériel de nombreuses applications de sécurité. Malheureusement, je n'ai pas pu utiliser ce circuit, qui n'était pas compatible avec le reste du matériel à ma disposition. J'ai cependant rédigé une étude comparative (servant aussi de manuel d'utilisation) entre ce modèle et un autre, l'Arduino CryptoShield ; l'un étant destiné à être monté sur un micro-controleur, l'autre sur un micro-ordinateur (les utilisations étant les mêmes mais leur réalisation différente)\footnote{Étude disponible à l'adresse mail martin.guilloux@insa-cvl.fr}. Ce matériel aurait pu simplifier considérablement le protocole, ainsi que couvrir des failles qui sont toujours présentes dans la version actuelle (voir la partie traitant du bilan), ce qui laisse une ouverture pour un prochain sujet de recherche.
+
+\begin{figure}[h]
+\center
+\includegraphics{cryptoshield.jpg}
+\caption{le CryptoShield que j'ai étudié}
+\end{figure}
+\paragraph{}Au terme de cette étude, j'ai travaillé à la correction du premier jet de protocole sécurisé que j'avais établi. En commençant l'implémentation de ce protocole j'ai pu me rendre compte de limitations que je n'avais pas envisagé, dûes à la puissance de calcul limitée des cartes Arduino. En effet, je comptais utiliser un système de chiffrement asymétrique, ce qui requiert une grande puissance de calcul pour éviter que les clés stockées ne soient facilement crackables, puissance qui ne peut être fournie par les Arduino (or dans le cadre d'un protocole Do It Yourself les Arduino sont pour ainsi dire la matière première, et ne peuvent être remplacées). \paragraph{}Il a donc fallu revoir le protocole en fonction de ces limitations, équilibrant sans cesse les compromis entre coûts supplémentaires et sécurité. En ajoutant par exemple au système un lecteur de carte SD, le problème du stockage a été reglé, cependant qu'apparaissait celui de la sécurité du support physique (la carte SD).
+\paragraph{}Au terme de ces expérimentations s'est fixée la version définitive du protocole que j'ai du concevoir. Pour plus de détails sur ce protocole, voir la première annexe.
+
+
+
+\newpage{}
+\paragraph{Implémentation}
+\paragraph{}A partir de ce moment l'implémentation du protocole a vraiment commencé. J'ai tout d'abord écrit un programme Arduino servant de \emph{proof of concept}, générant à la volée des clés de chiffrement sur une passerelle et les échangeant avec un noeud du réseau domotique. Cette phase m'a mené à effectuer des choix quand au protocole de communication utilisé (entre I2C, SPI ou encore NRF) pour échanger ces informations sensibles. Ce programme ajoutait ensuite le noeud à sa base de donnée d'autorisations (whitelist), sauvegardée sur une carte SD.
+\paragraph{}Ce programme a ensuite servi de base à l'écriture d'une bibliothèque chargée d'automatiser un certain nombre de mesures de sécurité pour le réseau MySensors. Le choix d'écrire une bibliothèque externe et non intégrée à MySensors a permis de respecter l'éthique "Do It Yourself" du projet, permettant à un utilisateur intéressé de comprendre le fonctionnement de son réseau sécurisé tout en simplifiant la tâche pour un utilisateur souhaitant simplement sécuriser son réseau domotique sans chercher à en connaître le fonctionnement profond. Cependant, en pleine période de développement est apparue une nouvelle version de MySensors (v2.0) qui a apporté un certain nombre de changements au protocole, ainsi qu'à l'organisation du projet. Il a donc fallu me plonger à nouveau dans le code source de MySensors pour comprendre les évolutions de son fonctionnement, et recommencer un certain nombre de tâches pour adapter mon code à la dernière version.
+\paragraph{}Tout en implémentant de nouvelles fonctionnalités à cette bibliothèque, j'ai été chargé de concevoir un moyen d'administrer un réseau sécurisé sans pour autant devoir modifier le code du réseau (causant des interruptions non désirées). La première solution adoptée consistait en une page web locale communicant avec un serveur chargé de lancer une application (cgi) communicant via le port série avec la passerelle à administrer. L'avantage de cette solution était le fait qu'il procure une interface simple à utiliser pour l'utilisateur final, cependant il aurait fallu avant cela savoir installer et paramétrer un serveur web pour utiliser des cgi, réduisant beaucoup la tranche de population susceptible d'utiliser ce protocole.
+\paragraph{}J'ai donc décidé d'opter pour une approche plus minimaliste, mais demandant également moins de connaissances pour être utilisée. La solution finale consiste donc en un programme en python, utilisable en lignes de commande (une interface graphique est en cours de développement), permettant d'administrer le réseau via le port série. Cette approche m'a permis (ainsi qu'à un utilisateur final) de gagner du temps, ne nécessitant pas de configurer un serveur web ni de concevoir une interface graphique. Cependant, le protocole serial étant utilisé à la fois par MySensors et par ce programme, il m'a fallu rajouter des fonctions de gestion des messages, des commandes Serial et des connexions à la bibliothèque.
+\paragraph{}A ce stade du développement, la bibliothèque permettait de gérer l'ajout, la suppression et la modification de noeuds au réseau sécurisé en ligne de commande, la génération aléatoire et le partage de clés de chiffrement (pour la passerelle), et l'échange d'informations de configuration et le stockage de clé de chiffrement (pour un noeud du réseau). La dernière phase a donc consisté à intégrer cette bibliothèque pour la faire intéragir avec MySensors.
+
+
+\chapter{Apports personnels}
+%retour d'expérience
+\section{Problèmes rencontrés}
+Pendant ce stage j'ai pu me heurter à différents problèmes fréquents dans les projets open-source : La documentation assez superficielle des contributeurs de MySensors, plutôt destinée à des utilisateurs curieux de connaître le fonctionnement de la bibliothèque sans toutefois y apporter des modifications, m'a posé plusieurs problèmes de compréhension (différentes conventions de code au cours du développement, absence de commentaires...) qui m'ont fait perdre du temps de façon non-négligeable.
+
+J'ai également passé un certain temps à essayer de faire fonctionner le CryptoCape qui m'avait été fourni, en tentant de le relier à une Arduino de manière un peu hasardeuse, avant de renoncer à utiliser cet outil, qui m'aurait pourtant fait gagner un temps considérable en développement puisqu'il intègre de nombreuses \emph{features} en matière de sécurité.
+
+Le problème majeur auquel j'ai été confronté pendant ce stage a été la parution de la version 2.0 de MySensors en plein milieu de l'été, réduisant une partie de mon développement à néant, me forçant à me réapproprier à la fois l'architecture du projet, mais aussi son nouveau mode de fonctionnement, le protocole entier ayant subi des modifications en profondeur. Cette parution a été un véritable coup dur qui m'a fait prendre conscience de la précarité des projets open source, dûe à une gestion de projet beaucoup plus discrète.
+
+\section{Retour d'expérience}
+Ce stage m'a beaucoup apporté en matière de connaissances techniques. Ayant participé à l'option Multimédia, mes connaissances en matière d'électronique et d'informatique embarquée étaient relativement basiques. Au cours de ce stage j'ai pu découvrir des protocoles de communication comme SPI ou I2C, étudier des optimisations de mémoire liées aux limites de mes supports de travail (Arduino Nano avec seulement 1ko d'EEPROM...), et d'une manière générale en apprendre beaucoup sur le monde de l'informatique embarquée.
+
+J'ai également pu participer à un projet open source et en découvrir à la fois les bons et les mauvais côtés, le tout avec une grande autonomie. Le fait de travailler entouré d'autres stagiaire m'a aussi permis de réaliser l'importance de changer d'état d'esprit lorsque je bloquais sur un problème, en observant d'autres projets et d'autres façons de travailler.
+
+Ce stage m'a également permis de raffraîchir mes connaissances en matière de python et de programmation web, des compétences utiles dans n'importe quel milieu.
+
+\section{Améliorations possibles}
+A ce stade, le protocole IoT sécurisé n'est pas encore tout à fait au point, et conserve encore quelques failles auquelles je compte remédier. En cela, l'aspect open source de ce projet est vraiment un plus, puisque cela me permet de continuer à améliorer ce protocole pour pouvoir un jour le soumettre aux développeurs de MySensors afin d'y être intégré.
+
+La gestion de réseau domotique sécurisé, qui passe pour le moment par un script python en lignes de commandes, mériterait elle aussi un petit upgrade (ajout d'une interface graphique, peut-être une interface web...) afin d'être plus utilisable par le grand public.
+\chapter{Conclusion}
+\paragraph{} Au cours de ce stage j'ai pu acquérir beaucoup de savoirs techniques, entre la programmation embarquée Arduino, le développement de bibliothèque en C++, les protocoles de communication bas niveau, la communication Serial avec python, l'utilisation de CGI dans des pages web... Mais aussi les différentes licenses existantes, et leurs restrictions.
+
+\paragraph{} J'ai également pu apprendre beaucoup sur les failles existantes en domotique (notamment grâce aux conférences de sécurité DEF CON et BLACK HAT), ainsi que sur les protocoles domotiques d'une manière générale, ce qui a contribué à étoffer mes connaissances en sécurité informatique.
+
+\paragraph{} A l'occasion de ce stage j'ai aussi pu réaliser l'importance de la rédaction de documentation d'un projet, parfois malgré moi (en faisant face au manque de documentation du code de MySensors), mais aussi en rédigeant l'état de l'art que je devais réaliser. Pour cela, apprendre à utiliser l'outil LaTeX m'a été précieux.
+
+\paragraph{} J'ai donc finalement pu réaliser un état de l'art en sécurité domotique, et concevoir un protocole domotique plus sécurisé que ce qui est proposé actuellement (bien que l'implémentation soit encore à finaliser). Ce stage m'a apporté beaucoup tant sur un plan technique que personnel, puisqu'il m'a également permis d'observer de près le monde de la recherche en informatique (et plus particulièrement dans le domaine de la sécurité) et m'a conforté dans mon choix de spécialisation en dernière année d'école d'ingénieur, à forte orientation vers l'informatique embarquée.
+
+
+\begin{thebibliography}{2}
+\bibitem{} Conférence sur la sécurité dans le protocole ZigBee - ZigBee Exploited The Good, The Bad, And The Ugly : \url{https://www.youtube.com/watch?v=OuVd4oQ_oDg}
+
+\bibitem{} Spécifications techniques ZigBee pour la domotique : 
+
+\bibitem{} Site de Z-Wave : \url{http://www.z-wave.com/about}
+
+\bibitem{} GitHub de OpenZwave : \url{http://www.openzwave.com/}
+
+\bibitem{} Conférence sur la sécurité dans le protocole Z-Wave : Honey, I'm Home - \url{https://www.youtube.com/watch?v=KYaEQhvodc8}
+
+\bibitem{} Conférence sur la sécurité dans le protocole UPnP/SOAP - Let's Talk About SOAP Baby, Let's Talk About UPNP : \url{https://www.youtube.com/watch?v=dT0b5DWq9b8&list=PLvoh\_DqyixFdtcxDOYE\_ezULgA5rNBEnc}
+
+\bibitem{} Site de MySensors : \url{https://www.mysensors.org/}
+
+\bibitem{} GitHub de MySensors : \url{https://github.com/mysensors/Arduino}
+\end{thebibliography}
+
+\begin{appendix}
+\chapter{Description du protocole MySecureSensors}
+\section{MySensors} 
+Mon protocole étant basé sur MySensors, il semble logique d'expliquer le fonctionnement basique de celui-ci.
+
+Un réseau MySensors se compose d'une (ou plusieurs) \textbf{passerelle}, chargé de récupérer les informations de différents \textbf{capteurs} et de les transmettre à un \textbf{contrôleur} (installé sur un ordinateur, chargé de gérer tout le réseau domotique).
+
+Pour fonctionner, MySensors utilise un fichier de configuration à modifier par l'utilisateur, qui est lu à la compilation et qui charge différents modules dans les différents capteurs. Ce fichier de configuration permet entre autres de définir un identifiant de capteur (nodeID) mais aussi une clé de chiffrement utilisée pour chiffrer des messages en AES. Cependant (voir l'état de l'art pour les détails\footnote{envoyer un mail à martin.guilloux@gmail.com}) cette tentative de sécurisation est encore pleine de failles (vecteur d'initialisation nul, clés non renouvelées...)
+
+C'est donc ces failles que j'ai du étudier et combler au cours de mon stage.
+
+\section{MySecureSensors}
+Présenté sous forme d'une bibliothèque à installer en plus de MySensors (ainsi que sur une forme patchée de MySensors v2.0), MySecureSensors est une tentative de porter la sécurité de MySensors à un niveau supérieur. Pour en comprendre le fonctionnement, examinons les différents points de sécurité à respecter :
+\begin{itemize}
+\item Authenticité et integrité des messages et émetteurs : Il faut vérifier que l'émetteur d'un message est bien celui qu'il prétend être, mais aussi que ces messages n'ont pas été interceptés et modifiés. Pour cela, je me suis servi d'une fonctionnalité déjà présente dans MySensors : la possibilité de signer les messages en utilisant une clé et un nonce pour authentifier de manière sécurisée les différents membres de la communication.
+\newpage
+L'authenticité des émetteurs est aussi assurée de façon simple mais efficace par l'utilisateur : Pour ajouter un noeud au réseau sécurisé, l'utilisateur doit connecter le capteur (et son arduino) à la passerelle en I2C (communication physique), il s'assure donc lui-même de l'authenticité de son noeud.\\
+\item Confidentialité des messages : Pour éviter que les messages ne puissent être interceptés et déchiffrés par une attaque passive (pour par exemple vérifier que personne n'est dans une maison qu'on surveille, pour pouvoir s'y introduire), je me suis servi d'une autre au stade expérimental de MySensors : la possibilité de chiffrer les messages en AES. De base, tous les noeuds d'un réseau utilisent la même clef de 128 bits ce qui compromet tout le réseau si la clé vient à tomber. 
+
+J'ai donc implémenté la gestion d'une "clé-maître" de 256 bits pour chaque noeud du réseau (géré sur la passerelle) ainsi que la génération et le renouvellement de clés de 128 bits régulièrement. Cela évite d'une part de compromettre tout un réseau si une clef tombe (puisque d'une part elle est renouvelée régulièrement, et que d'autre part chaque noeud utilise une clef différente.) mais aussi d'autre part de permettre une attaque exhaustive sur la clef d'un réseau. 
+
+J'ai aussi rajouté la génération d'un vecteur d'initialisation non-nul afin que deux messages identiques soient différents une fois chiffrés (pour éviter de déduire des informations sur les messages envoyés.
+
+\item La possibilité d'entretenir un "heartbeat" pour savoir si un capteur n'a pas répondu depuis un moment m'a également permis de déduire qu'au bout d'une trop longue inactivité un capteur pouvait être considéré comme compromis, et nécessitant donc d'être à nouveau connecté manuellement à la passerelle pour éviter que du code malicieux y soit téléversé.
+\end{itemize}
+
+\section{Lifecycle}
+Un réseau MySecureSensors suit donc le cycle de vie suivant :
+\subsection{ajout}
+Pour ajouter un noeud au réseau, il doit être connecté en I2C à la passerelle, et une commande doit être envoyée à la passerelle depuis l'interface d'administration (présente sur le PC connecté à la passerelle). A ce moment là, la passerelle génère une clé-maître et un vecteur d'initialisation, les transmet au noeud qui les stocke en EEPROM, tandis qu'elle-même l'ajoute à une base de données de type whitelist stockée sur une carte SD (voir schéma de la passerelle).
+\subsection{vie}
+Une fois l'échange effectué, lorsque le capteur rentre en service il échange une clé aléatoire avec la passerelle (la clef est chiffrée à l'aide de la clé-maître). Cette clé sera renouvelée régulièrement pour empêcher d'être cassée.
+
+Tant que le capteur répond au heartbeat de la passerelle, il est considéré comme fiable, et échange des messages chiffrés et signés.
+
+\subsection{fin de vie}
+Si l'utilisateur souhaite enlever un capteur de son réseau, il peut effectuer cette action depuis l'interface d'administration MySecureSensors.
+
+De plus, si le capteur n'est plus fiable (pas de réponse au heartbeat) il est automatiquement ôté de la whitelist et ne peut plus communiquer avec le réseau sécurisé.
+
+\section{Schéma récapitulatif, failles encore présentes}
+\subsection{Schéma récapitulatif}
+\begin{figure}[h]
+\center
+\includegraphics{schema.png}[0.2]
+\caption{Schéma récapitulatif d'un réseau MySecureSensors}
+\end{figure}
+\subsection{Failles encore présentes}
+A l'heure actuelle ce protocole est encore perfectible puisqu'en l'état, à part avec un heartbeat très court (qui empêche donc la déconnexion) il est impossible de détecter qu'un attaquant a pris la main sur un capteur, et donc de détecter si le réseau est compromis. De plus, l'Arduino ne disposant pas d'une EEPROM chiffrée, il est possible pour n'importe qui prenant la main sur le capteur de récupérer une clé-maître en la lisant directement en mémoire.
+
+\end{appendix}
+
+\end{document}

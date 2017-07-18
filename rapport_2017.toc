@@ -1,0 +1,5 @@
+\select@language {french}
+\contentsline {paragraph}{}{4}{section*.7}
+\contentsline {chapter}{\numberline {1}}{5}{chapter.1}
+\contentsline {chapter}{\numberline {2}}{6}{chapter.2}
+\contentsline {chapter}{\numberline {3}}{7}{chapter.3}
