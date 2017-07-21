@@ -19,9 +19,6 @@
 
 \usepackage{fancyhdr}
 
-  \lstdefinestyle{ascii-tree}{
-    literate={├}{|}1 {─}{--}1 {└}{+}1 
-  }
 
 \pagestyle{fancy}
 \setlength{\unitlength}{1mm}
@@ -75,27 +72,17 @@ Merci aussi à tout le reste de l'équipe Smile Outsourcing, avec qui j'ai discu
 
 \item{\textbf{Automatisation}}: Ensemble de techniques permettant le déroulement autonome d'un système, en interconnectant plusieurs élements de ce système ; Par exemple, la génération d'un fichier pdf et l'envoi de ce fichier par mail, tout ceci sans intervention directe humaine.
 
-\item{\textbf{AS}}: Système Autonome, ensemble de réseaux IP sous le contrôle d'une entité/organisation unique (ex. entreprise, FAI...)
-
-\item{\textbf{container}}: système d'exploitation isolé à l'intérieur d'un autre système, permettant ainsi à un hôte de virtualisation de faire tourner plusieurs systèmes sur une seule machine physique. (ex. de systèmes de conteneurisation : docker, lxc, openVZ)
-
-\item{\textbf{BGP}}: Pour \emph{Border Gateway Protocol} - Protocole d'échange de routes entre différents AS, notamment sur le réseau Internet
+\item{\textbf{Container}}: système d'exploitation isolé à l'intérieur d'un autre système, permettant ainsi à un hôte de virtualisation de faire tourner plusieurs systèmes sur une seule machine physique. (ex. de systèmes de conteneurisation : docker, lxc, openVZ)
 
 \item{\textbf{Orchestration}}: Processus automatique d'organisation, de coordination et de gestion de systèmes informatiques, de middlewares et de services.
-
-\item{\textbf{Datacenter}}: Site physique regroupant un grand nombre d'équipements de système d'information (Serveurs, core routeurs, switchs, firewalls...)
 
 \item{\textbf{Ansible}}: Plate-forme logicielle d'automatisation Open Source en python, détenue par Red Hat. Ansible s'appuie sur ssh et utilise un modèle agentless ne nécessitant pas d'installer un client sur chaque noeud géré.
 
 \item{\textbf{Puppet}}: Une autre plate-forme logicielle d'automatisation Open Source, écrite en ruby, développée par Puppetlabs. Puppet est basé sur un modèle master-slaves, il est nécessaire d'installer un agent sur chaque noeud, qui exécute le catalogue d'instruction envoyé par le puppetmaster.
 
+\item{\textbf{PXE}} (prononcé Pixie): Système permettant à un serveur de booter sur une image de système d'exploitation présente sur le réseau
+
 \item{\textbf{ENC}}: Pour External Node Classifier - Programme externe à Puppet interrogé par le puppetmaster, chargé de gérer pour chaque noeud la liste des classes et des paramètres qui lui sont attribués. (Par exemple, l'outil puppet-dashboard, en plus de fournir une interface web de résumé des puppet run, offre aussi la possibilité d'être utilisé comme ENC)
-
-\item{\textbf{Rôle Ansible}}: ensemble de fichiers d'intructions écrites en yaml permettant à Ansible d'effectuer ces instructions sur les noeuds qu'il gère. Ce rôle peut être invoqué depuis n'importe quel \emph{playbook} Ansible. Un équivalent en programmation serait une bibliothèque C ou un module Python, qu'on peut appeler depuis n'importe quel programme
-
-\item{\textbf{Playbook}}: Ensemble d'instructions exécutées sur un certain nombre de noeuds par Ansible, écrit en yaml. Il comprend notamment la liste des noeuds sur lesquels s'exécuter, les permissions requises, ainsi qu'une liste de rôles Ansible et des variables.
-
-\item{\textbf{Manifest Puppet}}: Code écrit en langage Puppet s'exécutant sur les puppet agents. L'équivalent d'un rôle Ansible.
 
 \end{itemize}
 
@@ -228,16 +215,127 @@ magui@puppetmaster-v4:~/puppet/modules/puppetnode (bacula-lxc)$ tree
 
 \end{Verbatim}
 
-
-Lors d'une run puppet, le puppet-dashboard de Smile fait office d'ENC\footnote{voir le glossaire} pour déterminer quelles classes appliquer à chaque noeud. Il lit ensuite les manifests et les adapte au noeud en renseignant les variables (on pourrait faire une analogie avec l'étape des directives de préprocesseur dans une compilation), avant d'envoyer un \emph{catalog} au noeud qui les exécute.
-
+\newpage
 Une autre composante essentielle du système d'orchestration de Smile est l'utilisation de \emph{hiera}. Il s'agit d'un système permettant de stocker des variables en dehors des manifests dans des fichiers yaml. Dans le cas de Smile hiera est utilisé pour stocker les variables spécifiques à chaque serveur, permettant de gérer les spécificités de chaque machine de manière centralisée.
+
+Lors d'une run puppet, le puppet-dashboard de Smile fait office d'ENC\footnote{voir le glossaire} pour déterminer quelles classes appliquer à chaque noeud. Il lit ensuite les manifests et les hieradata et les adapte au noeud en renseignant les variables (on pourrait faire une analogie avec l'étape des directives de préprocesseur dans une compilation), avant d'envoyer un \emph{catalog} au noeud qui les exécute.
+
+Au cours de cette exécution puppet remplit des fichiers de configuration, installe des paquets à des versions spécifiques, transfère des fichiers de scripts, lance des services... A la fin d'une run puppet, on a donc un système dans un état donné, et refaire une run sans modifier de paramètre garde le serveur dans cet état (ou l'y remet si des fichiers ont été modifiés à la main). Cette idempotence est l'un des points majeurs sur lesquels puppet insiste : Il garantit une infrastructure dans un état stable, exempte de modifications à la main, et apporte donc des certitudes quant à l'état des configurations de chaque système.
 
 \chapter{Les évolutions apportées}
 
-\lipsum
-\lipsum
-\lipsum
+Lors de mon arrivée chez Smile, l'équipe Infra, que j'ai intégré, était en pleine restructuration du fonctionnement interne. Nous avons ainsi mené plusieurs projets en parallèle que je vais présenter ici, notamment la mise en place d'un serveur puppetmaster en version 4 et la migration des modules puppet utilisés par smile, jusque là en version 2 ou 3 ; L'intégration de l'outil d'automatisation \emph{Ansible} au système d'orchestration de la production ; Et une étude pour déterminer le nouveau socle de virtualisation de Smile.
+
+\section{Choix du socle de virtualisation}
+
+Jusqu'ici, le socle de virtualisation utilisé par Smile était, comme décrit plus haut, une base CentOS comme système d'exploitation, et la suite OpenVZ pour déployer des containers. Cependant, le projet OpenVZ apporte son lot de contraintes : il nécessite un kernel spécial (vzkernel) sur l'hôte de virtualisation, et son développement s'est considérablement ralenti ces dernières années. Il a donc fallu réfléchir à la mise en place d'un autre socle de virtualisation avec plus de dynamique dans son développement, et idéalement plus d'avantages que son prédécesseur.
+
+L'utilisation de containers plutôt que de machines virtuelles type KVM/QEMU s'est imposée pour des raisons de performances : L'écart de performances entre un container et un OS "bare-metal" est de l'ordre de 2 à 3\%, contre 5-6\% environ pour une machine type KVM. En termes de densité, il est possible de peupler un serveur avec 14 fois plus de containers que de KVM.
+
+Notre choix s'est porté sur l'utilisation de LinuX Containers (\emph{lxc}), avec son \emph{daemon} lxd. Ce système de conteneurisation a depuis quelques années le vent en poupe, bénéficiant d'une intégration privilégiée au noyau Linux, dont il tire profit avec des features comme les cgroups et les espaces de nommages, qui permettent d'apporter une couche supplémentaire de sécurité aux containers. 
+
+Cependant lxd, étant un produit de Canonical, n'est disponible que sous Ubuntu. C'est pourquoi il a été arrêté que les nouveaux hôtes de virtualisation de Smile sont maintenant sous Ubuntu Server 16.04, l'édition Long Term Support de Ubuntu Server.
+
+\section{Intégration d'Ansible}
+
+Un autre projet dans le cadre de l'amélioration et l'industrialisation de la production, nous avons intégré l'utilisation d'Ansible à l'ensemble des outils de Smile, que je vais brièvement présenter ici.
+\newpage
+\subsection{Présentation d'Ansible}
+
+\subsubsection{Présentation générale}
+Ansible est un "outil d'automatisation simple"\footnote{Du moins d'après ses concepteurs : \url{https://www.ansible.com/}}, fonctionnant sans agent au contraire de Puppet. Pour les noeuds à administrer, il suffit d'avoir un daemon ssh ainsi que l'interpréteur python installé. 
+
+Ansible utilise ensuite une série de connexions ssh pour pousser des scripts python qui s'exécuteront sur le noeud. On a donc une architecture beaucoup plus simple que celle de Puppet puisqu'il suffit d'installer Ansible sur son poste pour pouvoir gérer immédiatement toutes les machines de production. En termes de sécurité, Ansible s'appuie sur openSSH, qui fait office de référence en termes de shell distant.
+
+\subsubsection{Fonctionnement}
+
+Ansible utilise un fichier \emph{inventory} dans le style des fichiers ini (exemple ci-après) pour faire le lien entre un nom et un groupe de machines comme suit :
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize]
+[webservers]
+foo.example.com
+bar.example.com
+
+[dbservers]
+one.example.com
+two.example.com
+three.example.com
+
+[targets]
+localhost ansible_connection=local
+other1.example.com ansible_connection=ssh ansible_user=mpdehaan
+other2.example.com ansible_connection=ssh ansible_user=magui
+\end{Verbatim}
+\end{framed}
+Pour effectuer des actions sur un groupe il suffit de lui préciser par exemple \begin{framed}magui@fonzie:~\$ ansible -m ping targets\end{framed}
+
+L'option -m ping permet d'exécuter un seul module Ansible sur les cibles (ici le groupe \emph{targets}). Le module ping est un simple module qui détermine si une machine est atteignable et si python est installé dessus.
+
+Le fichier d'inventory par défaut est stocké dans /etc/ansible/inventory. Il est également possible d'utiliser un fichier alternatif par exemple avec :
+
+\begin{framed}magui@fonzie:~\$ ansible -i /mnt/nfs/ansible/shared\_inventory -m ping targets\end{framed}
+
+Ansible se voulant plus simple que Puppet ou d'autres outils d'automatisation, les instructions à lui passer n'utilisent pas de système de classe ou d'ENC. L'ensemble des instructions peut être soit passé directement en lignes de commandes (pour exécuter un seul module comme plus haut), soit dans un fichier yaml appelé \emph{playbook}. Un playbook décrit l'ensemble des \emph{modules} et des \emph{rôles} à exécuter, ainsi que les groupes de machines sur lesquels exécuter ces modules et ces \emph{modules}.\footnote{Un exemple de playbook Ansible est disponible à la fin de ce rapport, en annexe 2}
+
+\begin{figure}[htp]
+\centering
+\includegraphics[scale=1.10]{play.png}
+\caption{Un exemple d'exécution de playbook Ansible}
+\label{}
+\end{figure}
+
+Un playbook peut contenir plusieurs \emph{plays}, qui sont un ensemble d'instructions exécutées sur un groupe de machines. Il est donc possible de configurer plusieurs types d'hosts en une seule run Ansible, contrairement à Puppet. Par exemple, au début de mon stage, l'ajout d'un noeud à l'architecture gérée par Puppet nécessitait de se logger sur le noeud, de lancer une première run puppet afin de générer une CSR (Certificate Signing Request) à l'intention de l'autorité de certification du puppetmaster, puis de se connecter sur le puppetmaster pour signer à la main cette CSR, et enfin de se reconnecter au noeud pour faire une run puppet effective. Grâce à un playbook Ansible conçu durant mon stage et contenant trois plays successives (une sur le noeud, une sur le puppetmaster et une deuxième sur le noeud), il est désormais possible d'effectuer toutes ces tâches en une seule commande ansible.
+
+Comme Puppet, l'idempotence est une notion importante avec Ansible, plusieurs runs successives exécutées sur le même serveur devant retourner le même état. On peut donc être certain de l'état d'un système à l'issue d'une run vis-à-vis des configurations et des paquets installés.
+
+\paragraph{}Un \emph{module} Ansible est l'unité d'instruction d'Ansible. Un module est comparable à une ressource Puppet, chaque module correspondant à un script python poussé par Ansible sur les noeuds pendant une run. Il existe de nombreux modules, des plus génériques (un module \emph{raw} pour exécuter une commande ssh directe (peu recommandé)) aux plus spécifiques (par exemple \emph{rabbitmq\_plugin} pour ajouter des plugins au système de messages queue RabbitMQ)
+
+Il est possible de rassembler un ensemble de tasks (suite d'instructions, et donc de modules), de templates, et de fichiers de variables dans une structure en arborescence appelée \emph{rôle Ansible}. On peut comparer un rôle Ansible à un module Puppet, bien que son arborescence soit un peu plus complexe, puisqu'elle ajoute des répertoires de tests, de valeurs par défaut et de handlers.
+
+Les handlers sont des instructions appelées à l'exécution d'une instruction spéciale dans une play, l'instruction \emph{notify}. Par exemple, on peut, dans un playbook, installer un serveur web apache et pousser sa configuration à l'aide d'une template, en ajoutant l'instruction \emph{notify} lors du transfert du fichier de configuration, avec un paramètre (par exemple) "apache-reload". Si le handler du même nom est présent dans le dossier éponyme du rôle, ses instructions sont exécutées dans la foulée (dans notre cas, on reload la configuration apache juste après l'avoir modifiée)
+
+Un rôle Ansible peut de plus être versionné sur un serveur git. Il est alors possible de l'appeler en utilisant un outil appelé ansible-galaxy, qui ira alors chercher automatiquement la dernière version du rôle. Ce système de partage des rôles permet à la fois de bénéficier de mises à jour régulières mais aussi de simplement inclure différents rôles plutôt que de réécrire un playbook à chaque fois. Par exemple, le playbook suivant installe et configure une stack Kibana + Elastic Search + Logstash uniquement en important et en exécutant des rôles Ansible :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize]
+- hosts: logs
+  gather_facts: yes
+  
+  vars_files:
+    - vars/main.yml
+  pre_tasks:
+    - name: Update apt cache if needed.
+	  apt: update_cache=yes cache_valid_time=86400
+  roles:
+    - geerlingguy.java
+	- geerlingguy.nginx
+	- geerlingguy.elasticsearch
+	- geerlingguy.elasticsearch-curator
+	- geerlingguy.kibana
+	- geerlingguy.logstash
+	- geerlingguy.logstash-forwarder
+\end{Verbatim}
+\end{framed}
+
+Cependant, au contraire de Puppet, les solutions permettant de centraliser les run et les logs Ansible à la manière d'un ensemble puppetmaster + puppetdashboard sont soit trop peu performantes, soit non Open Source et aux tarifs dissuasifs : C'est le cas notamment de la solution Ansible Tower détenue par RedHat pour centraliser une architecture d'automatisation Ansible : Le prix des licenses est suffisament élevé pour décourager l'utilisation chez Smile, et la libération des sources, si elle semble prévue par RedHat, n'a aucune date annoncée.
+
+\subsubsection{Intégration d'Ansible à la production de Smile}
+
+Dès mon arrivée chez Smile j'ai pu découvrir Ansible en profondeur, notamment à l'aide du très bon Ansible for DevOps\footnote{Jeff Geerling, Leanpub, 2016-11-23}, dans le but d'automatiser les processus de déploiements de plates-formes. L'une de mes premières missions chez Smile a été d'adapter un script chargé de configurer un \emph{bonding} entre deux interfaces ethernet aux dernières versions de CentOS ainsi que la configuration de bridges et de vlans. J'ai finalement migré le comportement de ce script vers Ansible, à la fois pour me permettre de mieux appréhender son fonctionnement mais aussi pour que, couplé à un déploiement d'OS en PXE, il soit possible d'automatiser entièrement le déploiement et la configuration réseau d'un nouveau serveur hôte de virtualisation. Une fois qu'a été actée la décision de passer nos nouveaux hôtes de virtualisation sous Ubuntu, ce rôle Ansible a simplement eu besoin d'être adapté pour inclure les templates de fichiers de configuration réseau de type /etc/network/interfaces.d (utilisées par Ubuntu) en plus des templates destinées aux machines sous CentOS.
+
+
+
+\lipsum[1]
+\lipsum[1]
+\lipsum[1]
+\lipsum[1]
+
+\section{Upgrade de puppet}
+\lipsum[1]
+\lipsum[1]
+\lipsum[1]
+\lipsum[1]
+
 
 \chapter{Autres missions}
 \lipsum
