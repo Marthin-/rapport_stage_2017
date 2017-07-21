@@ -323,7 +323,24 @@ Cependant, au contraire de Puppet, les solutions permettant de centraliser les r
 
 Dès mon arrivée chez Smile j'ai pu découvrir Ansible en profondeur, notamment à l'aide du très bon Ansible for DevOps\footnote{Jeff Geerling, Leanpub, 2016-11-23}, dans le but d'automatiser les processus de déploiements de plates-formes. L'une de mes premières missions chez Smile a été d'adapter un script chargé de configurer un \emph{bonding} entre deux interfaces ethernet aux dernières versions de CentOS ainsi que la configuration de bridges et de vlans. J'ai finalement migré le comportement de ce script vers Ansible, à la fois pour me permettre de mieux appréhender son fonctionnement mais aussi pour que, couplé à un déploiement d'OS en PXE, il soit possible d'automatiser entièrement le déploiement et la configuration réseau d'un nouveau serveur hôte de virtualisation. Une fois qu'a été actée la décision de passer nos nouveaux hôtes de virtualisation sous Ubuntu, ce rôle Ansible a simplement eu besoin d'être adapté pour inclure les templates de fichiers de configuration réseau de type /etc/network/interfaces.d (utilisées par Ubuntu) en plus des templates destinées aux machines sous CentOS.
 
+J'ai ainsi pu commencer à discerner les avantages et les inconvénients d'Ansible, ainsi que ses limitations. J'ai notamment été un peu déçu par les limitations induites par le yaml, langage utilisé pour écrire les playbooks Ansible. Si plusieurs structures de contrôle sont mises en place - équivalent d'un test \emph{if} avec la ligne \emph{when} ajoutée à la fin de l'appel d'un module, possibilité d'exécuter des blocs de modules, possibilité d'appeler du code python sur les variables du playbook - le langage manque clairement de possibilités du point de vue programmation. Ce point faible fait partie intégrante de la philosophie d'Ansible : "Faire générique", s'adapter au plus grand nombre plutôt qu'aux cas particuliers. Cependant cette limitation apporte des contraintes assez lourdes, compliquant des tâches pourtant assez simples dans un shell comme par exemple effectuer l'équivalent d'un \begin{verbatim}for i in $(ls /home/fonzie); do cat $i>> /tmp/singeDuFutur.out \end{verbatim} 
 
+En effet, pour faire une boucle sur des fichiers ou autres, il faut les lister de la manière suivante :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize]
+
+    # emit a debug message containing the content of each file.
+    - debug:
+        msg: "{{ item }}"
+      with_file: # peut apparaître sous la forme "with_items"
+        - first_example_file
+        - second_example_file
+        
+\end{Verbatim}
+\end{framed}
+
+On peut donc voir que pour certaines tâches, Ansible demande des tweaks et des contorsions pour arriver à ses fins. Cependant il permet dans l'ensemble de déployer des configurations et des outils très rapidement une fois les rôles codés, ce qui a justifié le choix de l'utiliser pour déployer les hôtes de virtualisation de Smile ainsi que la base d'outils. 
 
 \lipsum[1]
 \lipsum[1]
