@@ -52,9 +52,9 @@ Ce stage m'a fait expérimenter plusieurs technologies, notamment liées à l'au
 
 \section*{Remerciements}
 Je remercie mon enseignant référent Benjamin NGUYEN, d'avoir encadré le déroulement de mon stage.\\
-Merci également à Mathieu BLANC, mon maître de stage, pour sa bonne humeur et ses bons conseils.\\
+Merci également à Mathieu BLANC, mon maître de stage, pour sa bonne humeur et ses bons conseils. Et aussi pour les parties de Mario Kart ;)\\ % Même si à la fin c'est moi qui gagne
 Je remercie aussi toute l'équipe Outsourcing de Smile Montpellier, pour l'accueil et la bonne ambiance quotidienne : Syben, Daber, Adbig, Cebri, Wibru, Secal, Jocor, Dyfei, Segir, Mohla, Aulem, Flmag, Pamar, Alniz, Niper, Alwie, merci d'avoir été plus que de simple collègues de travail.\\
-Merci aussi à tout le reste de l'équipe Smile Outsourcing, avec qui j'ai discuté au quotidien.
+Merci aussi à tout le reste de l'équipe Smile Outsourcing, avec qui j'ai discuté au quotidien. 
 
 
 \tableofcontents
@@ -288,7 +288,7 @@ Un playbook peut contenir plusieurs \emph{plays}, qui sont un ensemble d'instruc
 
 Comme Puppet, l'idempotence est une notion importante avec Ansible, plusieurs runs successives exécutées sur le même serveur devant retourner le même état. On peut donc être certain de l'état d'un système à l'issue d'une run vis-à-vis des configurations et des paquets installés.
 
-\paragraph{}Un \emph{module} Ansible est l'unité d'instruction d'Ansible. Un module est comparable à une ressource Puppet, chaque module correspondant à un script python poussé par Ansible sur les noeuds pendant une run. Il existe de nombreux modules, des plus génériques (un module \emph{raw} pour exécuter une commande ssh directe (peu recommandé)) aux plus spécifiques (par exemple \emph{rabbitmq\_plugin} pour ajouter des plugins au système de messages queue RabbitMQ)
+\paragraph*{}Un \emph{module} Ansible est l'unité d'instruction d'Ansible. Un module est comparable à une ressource Puppet, chaque module correspondant à un script python poussé par Ansible sur les noeuds pendant une run. Il existe de nombreux modules, des plus génériques (un module \emph{raw} pour exécuter une commande ssh directe (peu recommandé)) aux plus spécifiques (par exemple \emph{rabbitmq\_plugin} pour ajouter des plugins au système de messages queue RabbitMQ)
 
 Il est possible de rassembler un ensemble de tasks (suite d'instructions, et donc de modules), de templates, et de fichiers de variables dans une structure en arborescence appelée \emph{rôle Ansible}. On peut comparer un rôle Ansible à un module Puppet, bien que son arborescence soit un peu plus complexe, puisqu'elle ajoute des répertoires de tests, de valeurs par défaut et de handlers.
 
@@ -342,12 +342,33 @@ En effet, pour faire une boucle sur des fichiers ou autres, il faut les lister d
 
 On peut donc voir que pour certaines tâches, Ansible demande des tweaks et des contorsions pour arriver à ses fins. Cependant il permet dans l'ensemble de déployer des configurations et des outils très rapidement une fois les rôles codés, ce qui a justifié le choix de l'utiliser pour déployer les hôtes de virtualisation de Smile ainsi que la base d'outils. 
 
-\lipsum[1]
-\lipsum[1]
-\lipsum[1]
-\lipsum[1]
+L'outil \emph{ansible-galaxy} a été intégré dès le début de l'utilisation d'Ansible chez Smile, un serveur gitlab étant déjà à disposition (utilisé pour versionner les modules puppet développés par Smile). Couplé à des playbooks par défaut mis à disposition des utilisateurs, ceci permet de passer d'une durée de déploiement de nouvel host (post-PXE) d'une bonne demi-heure à quelques minutes seulement.
+
+Pour l'instant, Ansible est utilisé pour les déploiements et les installations suivants :
+
+\begin{itemize}
+	\item La configuration réseau (bonding, vlans...)
+	\item L'installation des paquets de puppet, la connexion au puppetmaster pour générer un certificat (fonctionne avec les trois puppetmasters de Smile) et la première run puppet
+	\item L'installation de lxc/lxd
+	\item Le déploiement de containers lxc avec quatre profils différents
+\end{itemize}
 
 \section{Upgrade de puppet}
+
+Le chantier majeur durant mon stage chez Smile a été de mettre à jour l'infrastructure puppet, avec tous les changements de manifests et la reprise en main de l'architecture que cela implique. En effet, la précédente architecture avait été largement adaptée et modifiée par un membre de l'équipe aujourd'hui parti, sans forcément documenter tous les changements. Le passage à puppet 4 a donc été l'occasion de se réapproprier cette architecture, et de comprendre l'origine de plusieurs choix faits à cette époque (et parfois revenir sur ces choix).
+
+\subsection{Étude de faisabilité}
+
+Avant de migrer toute l'architecture puppet vers la version 4, j'ai commencé par rassembler des informations sur les changements introduits au passage de versions. Certains noeuds remontant jusqu'à la version 2.6, un grand nombre de fonctionnalités ont été introduits depuis, ainsi que des changements internes. Un nouveau parser de manifests a notamment été introduit, et plusieurs fonctions ont été dépréciées.
+
+Les différences introduisant trop de \emph{breaking changes}, il a été décidé de maintenir les deux architectures en parallèle : D'une part l'existant, avec un puppetmaster jumelé en version 3 (et rétrocompatible avec les plus vieux agents puppet), d'autre part les nouvelles machines avec un puppetmaster en version 4. Pour toutes les machines de monitoring et de backup, il a donc fallu imaginer un moyen d'effectuer des runs à la fois sur puppetmaster1 (en version 3) et puppetmaster-v4, comme nous le verrons par la suite.
+
+\subsection{Installation du serveur}
+
+La migration vers puppet v4 avait été entamée bien avant que j'arrive chez Smile, une VM avait déjà été créée. Cependant l'équipe infra avait à l'époque eu d'autres priorités et le projet était resté à l'état embryonnaire. Une bonne partie des outils et logiciels installés étaient donc déjà remplaçables quand j'ai commencé à travailler sur la mise en place du serveur puppetmaster-v4. J'ai fait le choix de repartir sur une base vierge, en purgeant les logiciels installés avant de déployer la base du serveur puppet.  
+
+
+
 \lipsum[1]
 \lipsum[1]
 \lipsum[1]
