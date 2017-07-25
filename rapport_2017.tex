@@ -365,20 +365,36 @@ Les différences introduisant trop de \emph{breaking changes}, il a été décid
 
 \subsection{Installation du serveur}
 
-La migration vers puppet v4 avait été entamée bien avant que j'arrive chez Smile, une VM avait déjà été créée. Cependant l'équipe infra avait à l'époque eu d'autres priorités et le projet était resté à l'état embryonnaire. Une bonne partie des outils et logiciels installés étaient donc déjà remplaçables quand j'ai commencé à travailler sur la mise en place du serveur puppetmaster-v4. J'ai fait le choix de repartir sur une base vierge, en purgeant les logiciels installés avant de déployer la base du serveur puppet.  
+La migration vers puppet v4 avait été entamée bien avant que j'arrive chez Smile, une VM avait déjà été créée. Cependant l'équipe infra avait à l'époque eu d'autres priorités et le projet était resté à l'état embryonnaire. Une bonne partie des outils et logiciels installés étaient donc déjà remplaçables quand j'ai commencé à travailler sur la mise en place du serveur puppetmaster-v4. J'ai fait le choix de repartir sur une base vierge, en purgeant les logiciels installés avant de déployer la base du serveur puppet. L'installation en elle-même comprend :
+
+\begin{itemize}
+	\item Puppet
+	\item Une base de données contenant les informations des différents noeuds, appelée puppetdb
+	\item Un front-end web : puppet-dashboard, servant aussi d'ENC
+	\item Nginx pour servir puppet-dashboard
+\end{itemize}
+
+Le principal problème que j'ai rencontré lors de cette installation est que le puppet-dashboard n'est plus officiellement supporté pour puppet en version 4. Il a un temps été repris par une communauté de développeurs\footnote{\url{https://github.com/sodabrew/puppet-dashboard}}, cependant le projet stagne et ne semble plus maintenu (à l'heure de rédaction de ce rapport, le dernier commit a été soumis il y a six mois). Cependant, les quelques alternatives testées ne semblaient pas adaptées : Certaines (puppetBoard, Puppet Explorer) manquent de fonctionnalités, d'autres (The Foreman) sont trop lourdes et riches en features pour l'usage de Smile, enfin certaines alternatives (Le nouveau Dashboard de puppetlabs, Puppet Enterprise Console) ne sont pas Open Source et sont donc éliminées d'office. Nous avons donc décidé de continuer à utiliser puppet-dashboard malgré la stagnation du projet. De plus, ce choix facilite la continuité et la transition entre puppet v3 et puppet v4.
+
+\subsection{Portage des manifests puppet v3 vers puppet v4}
+
+Une fois l'installation de puppet terminée, s'est entamée une phase durant laquelle toute l'équipe s'est mobilisée pour porter des manifests depuis puppetmaster1 vers puppetmaster-v4. Ce portage nous a permis de mieux comprendre l'architecture des manifests puppet et leur intrication dans le système de production de Smile. Comme dit plus haut, de nombreux changements et adaptations avaient été réalisés par un membre de Smile aujourd'hui parti, et cette série de portages nous a permis de réaliser à la fois la mesure de ces changements et de rationaliser leur utilité dans le nouveau système de production. La plupart du temps, ces changements ont été induits par des fonctionnalités manquant aux versions précédentes de puppet, qui ont été depuis rajoutés, comme par exemple la gestion par puppet des package repositories de Debian.
+
+\subsection{Cas du monitoring et des backups}
+\lipsum[1]
+\lipsum[1]
+\subsection{Mise en place des environnements de développeurs}
 
 
 
 \lipsum[1]
 \lipsum[1]
-\lipsum[1]
-\lipsum[1]
-
 
 \chapter{Autres missions}
 \lipsum
 
 \chapter{Conclusion, bilan}
-\lipsum
+\lipsum[1]
+\lipsum[1]
 
 \end{document}
