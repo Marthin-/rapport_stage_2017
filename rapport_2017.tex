@@ -154,6 +154,10 @@ Avant de poursuivre, il est nécessaire d'introduire un peu de vocabulaire spéc
 
 Pour savoir quelles instructions exécuter sur un noeud, puppet utilise un système de \emph{manifests} écrits en "langage puppet", un langage à la syntaxe assez spécifique (voir un exemple de manifest puppet en annexe 1) mais relativement simple à comprendre, ainsi qu'un système de \emph{templating} basé sur \emph{erb} (Embedded RuBy) pour pousser des fichiers de configuration sur les noeuds. Ces manifests se divisent en classes, elles-mêmes divisées en ressources. Avec puppet, tout est ressource.\footnote{Paracelse ajouterait que "rien n'est ressource, c'est la dose qui fait la ressource."} Une ressource est en effet l'unité fondamentale d'instruction en puppet. Par exemple, déclarer une ressource de type \emph{file} dans un manifest donnera l'instruction de transférer un fichier (depuis le puppetmaster ou n'importe quelle URI, ou encore d'après un template), tandis qu'une ressource \emph{exec} permettra d'exécuter une commande directement dans le shell de la machine distante (encore une fois, voir en annexe 1 pour un exemple de code puppet)
 
+Par ailleurs, Puppet utilise un système dit de \emph{ressources exportées} pour partager des informations entre différents noeuds. Le principe est simple : En préfixant une ressource d'un arobase dans le code puppet, cette ressource est dite \emph{exportée}, c'est à dire qu'elle est stockée sur le puppetmaster dans une base de données appelée la puppetdb, et identifiée par un ou plusieurs tags.
+
+Un type de ressource spéciale, appelé \emph{collector}, peut récupérer ces ressources par tag et les exécuter. Un exemple d'utilisation est de générer un fichier de configuration à l'aide des facts d'un noeud, mais de stocker le fichier ainsi généré dans la puppetdb, puis de le collecter sur un serveur qui a besoin de ce fichier de configuration (par exemple shinken)
+
 \begin{itemize}
 	\item Une classe est une suite de déclarations de ressources, qui peut être incluse dans un manifest (et ainsi éviter de retaper le même code plusieurs fois) avec des paramètres spécifiés lors de l'écriture de la classe. Par exemple une classe xmpp::client pourrait recevoir un paramètre pour savoir à quel serveur xmpp le client doit se connecter, afin de gérer les fichiers de configuration xmpp correctement.
 	\item Un manifest, quant à lui, est un ensemble de ressources et d'inclusions de classes, en somme un fichier puppet générique.
@@ -162,8 +166,8 @@ Pour savoir quelles instructions exécuter sur un noeud, puppet utilise un syst�
 \end{itemize}
 
 Ci-dessous, l'arborescence typique d'un module puppet.
-\newpage
-\begin{Verbatim}[fontsize=\tiny]
+
+\begin{Verbatim}[fontsize=\scriptsize]
 magui@puppetmaster-v4:~/puppet/modules/puppetnode (bacula-lxc)$ tree
 .
 +-- files
@@ -378,20 +382,96 @@ Le principal problème que j'ai rencontré lors de cette installation est que le
 
 \subsection{Portage des manifests puppet v3 vers puppet v4}
 
-Une fois l'installation de puppet terminée, s'est entamée une phase durant laquelle toute l'équipe s'est mobilisée pour porter des manifests depuis puppetmaster1 vers puppetmaster-v4. Ce portage nous a permis de mieux comprendre l'architecture des manifests puppet et leur intrication dans le système de production de Smile. Comme dit plus haut, de nombreux changements et adaptations avaient été réalisés par un membre de Smile aujourd'hui parti, et cette série de portages nous a permis de réaliser à la fois la mesure de ces changements et de rationaliser leur utilité dans le nouveau système de production. La plupart du temps, ces changements ont été induits par des fonctionnalités manquant aux versions précédentes de puppet, qui ont été depuis rajoutés, comme par exemple la gestion par puppet des package repositories de Debian.
+Une fois l'installation de puppet terminée, s'est entamée une phase durant laquelle toute l'équipe s'est mobilisée pour porter des manifests depuis puppetmaster1 vers puppetmaster-v4. Ce portage nous a permis de mieux comprendre l'architecture des manifests puppet et leur intrication dans le système de production de Smile. Comme dit plus haut, de nombreux changements et adaptations avaient été réalisés par un membre de Smile aujourd'hui parti, et cette série de portages nous a permis de réaliser à la fois la mesure de ces changements et de rationaliser leur utilité dans le nouveau système de production. La plupart du temps, ces changements ont été induits par des fonctionnalités manquant aux versions précédentes de puppet, qui ont été depuis rajoutés, comme par exemple la gestion par puppet des package repositories de Debian. Les changements de ce genre ont pu être supprimés, ce qui a conduit à purger une partie du code des manifests.
+
+Dans d'autres cas, les comportements adoptés par les manifests n'étaient plus satisfaisants, notamment la gestion des clefs ssh des utilisateurs, dans laquelle subsistaient des reliquats de l'époque où Puppet n'était pas encore intégré à l'ingrastructure de Smile. Ces manifests ont été simplifiés et corrigés, afin d'améliorer entre autres la sécurité de l'infrastructure et sa robustesse. Par exemple, dans plusieurs cas nous avons isolé des problèmes de génération de mots de passe d'accès à des bases de données ou des daemons de backup dont la randomisation était prévisible et basée sur le hostname du noeud.
 
 \subsection{Cas du monitoring et des backups}
-\lipsum[1]
-\lipsum[1]
+
+Lors de la mise en place de puppetmaster-v4 un point majeur à respecter était de pouvoir conserver le monitoring et le backup des machines utilisant puppet v2/v3 tout en ajoutant la possiblité aux machines utilisant puppet v4 de déployer des configurations shinken - bacula - smile scripts v3 (un ensemble de scripts utilisé pour les backups)
+
+Il a fallu adapter l'architecture des fichiers de puppet pour qu'il puisse s'exécuter sur deux puppetmasters sans que les changements de l'un (liste des facts, stockage des fragments de configurations...), nous avons donc déployé un clone des répertoires de travail de puppet sur chaque machine nécessitant une run puppet dédoublée. Un module puppet a été développé sur puppetmaster-v4 pour gérer spécifiquement les serveurs en run dédoublée, qui s'assure de la présence 
+
+Les problèmes que nous avons rencontrés ensuite lors de la mise en place de ces runs dédoublées étant spécifiques à chaque technologie, je vais en parler dans deux parties différentes pour traiter les solutions apportées.
+
+\subsubsection{Le monitoring : shinken}
+
+Le principal problème est que puppet utilise des ressources exportées pour générer les configurations des noeuds à monitorer. En utilisant plusieurs puppetmasters, les données des noeuds ne sont donc pas stockées dans une unique puppetdb. Il a donc fallu trouver un moyen de générer les configurations en provenance des deux puppetdb sans provoquer de collision dans les configurations. En effet dans le cas de shinken, une définition d'host présente en double dans /etc/shinken/conf.d suffit à mettre en péril l'ensemble des configurations shinken, qui refuse alors de se recharger et de se rafraîchir. Ce dossier est lu récursivement par shinken au lancement du service, et tout fichier est vérifié (faute de quoi shinken reste dans l'état précédent le reload)
+
+A l'origine, les fichiers générés par Puppet étaient stockés dans le répertoire de configuration /etc/shinken/conf.d/bypuppet, et étaient de la forme
+
+\begin{Verbatim}[fontsize=\scriptsize]
+déclaration_hostgroup{
+	[...]
+	déclaration du hostgroup (regroupement de plates-formes d'un même client)
+	hostgroup gifi
+}
+
+déclaration host1{
+	[...]
+	host gifi-host1.smile-hosting.fr
+}
+
+déclaration host2{
+	[...]
+	host gifi-host2.smile-hosting.fr
+}
+
+déclaration host3{
+	[...]
+	host gifi-host3.smile-hosting.fr
+}
+\end{Verbatim}
+
+A l'ajout des runs shinken sur puppet-v4, un répertoire a été ajouté pour les configurations des noeuds gérés avec puppetmaster-v4 dans /etc/shinken/conf.d/bypuppet4. Cependant avec des configurations basées sur des templates comme vue juste au-dessus, on fait face à des problèmes de double déclaration de hostgroups dans le cas où une partie des hosts d'une plate-forme sont partiellement gérés par puppetmaster1 et par puppetmaster-v4, puisque la déclaration du hostgroup est présent à la fois dans /etc/shinken/conf.d/bypuppet4 et dans /etc/shinken/conf.d/bypuppet.
+
+Pour pallier ce problème, le module shinken a évolué à la fois sur puppetmaster1 et sur puppetmaster-v4 pour adopter un comportement permettant la coexistence des deux puppetmasters :
+
+\begin{itemize}
+	\item Les hostgroups sont maintenant définis à la fois par puppetmaster1 et puppetmaster-v4 dans /etc/shinken/conf.d/bypuppets, quitte à réécrire les mêmes fichiers dans les cas de hostgroups partagés entre les puppetmasters
+	\item Les hosts sont générés dans les dossiers de leurs puppetmasters respectifs (bypuppet et bypuppet4)
+\end{itemize}
+
+Cette architecture a le mérite d'éviter les redéclarations de hostgroups, même si elle a pour inconvénient de réécrire les mêmes fichiers de configuration les uns au-dessus des autres (puppet effaçant un fichier pour réécrire, chaque run puppet v3 efface les hostgroups en commun avec puppet v4 et réciproquement)
+
+\subsubsection{Les backups : Bacula, rsync}
+
+\paragraph*{}Le problème posé par bacula était plus simple que celui de shinken puisque les configurations ne s'écrasaient pas d'un puppetmaster à l'autre. Il s'agissait en effet de la façon dont avait été codée une fonction ruby sensée générer des mots de passe à la volée. Cette fonction était en effet utilisée en passant en argument le fqdn du noeud puppet sur lequel elle s'exécutait, et utilisait ce fqdn comme graine pour que le même mot de passe soit généré à la fois sur le client bacula et le serveur bacula-director.
+
+Ce comportement n'était pas souhaitable puisqu'il permet de déduire un mot de passe à l'aide d'une information très simple à obtenir.
+
+La solution à ce problème a été de générer le mot de passe sans utiliser le fqdn comme graine, mais en exportant la ressource contenant le mot de passe. Les échanges étant sécurisés, et la puppetdb étant chiffrée, le mot de passe n'est donc plus prédictible, tout en restant partagé entre les différents noeuds.
+
+\paragraph*{}Une partie des backups de Smile est gérée à l'aide de scripts (les Smile Scripts), basés sur rsync. Les serveurs recevant ces backups sont eux aussi en double run. Dans le cas des backups rsync, nous avons fait face à un problème de gestion des clefs ssh et des configurations du \emph{daemon} rsyncd : Les deux puppetmasters modifiant les mêmes fichiers, il a fallu adapter les manifests de manière à éviter de perdre des informations.
+
+Pour cela, la solution apportée a été de générer les configurations et les clefs ssh des noeuds gérés par puppetmaster-v4 dans des fichiers secondaires (/etc/rsyncd.conf-v4 et /etc/ssh/authorized\_keys2). La run puppet sur puppetmaster1 cherche ensuite ces fichiers et les concatène à la fin de /etc/rsyncd.conf et /etc/ssh/root/authorized\_keys
+
 \subsection{Mise en place des environnements de développeurs}
 
+Une fois la base de l'infrastructure de puppetmaster-v4 installée, en même temps que le portage des manifests, des environnements ont été mis à disposition du reste de l'équipe Outsourcing de Smile afin de pouvoir travailler sur les manifests puppet et les Smile Scripts tout en ayant un versionning du code et des moyens de tester du code isolé du système de production de puppet. Pour cela il existe trois types d'environnements :
+\begin{itemize}
+	\item L'environnement de production, correspondant à un repository git où sont poussés uniquement les modules puppet après une phase de qualification sur un nombre restreint de serveurs
+	\item L'environnement de qualification, correspondant à la branche master du repository git de développement
+	\item Les environnements de développeurs, correspondant à des branches spécifiques en fonction des besoins de développement. Il est possible de faire une run puppet avec ces environnements en utilisant la commande \begin{verbatim}puppet agent --test --environment Fonzie\end{verbatim}
+\end{itemize}
 
+Il existe aussi un repository dédié au versionning des hieradata, mais celui-ci est partagé entre environnements de qualification et de production.
 
-\lipsum[1]
-\lipsum[1]
+\subsection{Script de mise en production}
+
+% comparaison des versions
+
+\subsection{Script de gestion de la puppetdb}
+
+% python pour voir les ressources
 
 \chapter{Autres missions}
-\lipsum
+
+En plus des missions mentionnées plus haut, il m'a été confié d'autres tâches en parallèle, qui relèvent plus des tâches d'exploitation courante
+
+% puppet
+% ticketing
+% scripting
 
 \chapter{Conclusion, bilan}
 \lipsum[1]
