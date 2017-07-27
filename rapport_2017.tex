@@ -59,11 +59,16 @@ Merci aussi à tout le reste de l'équipe Smile Outsourcing, avec qui j'ai discu
 
 \tableofcontents
 
-\chapter*{Summary, keywords}
-\section*{Summary}
-\lipsum[1]\lipsum[1]
-\section*{Keywords}
-\lipsum[1]
+\newpage
+\subsection*{Summary}
+
+For the last six months I have been in a internship in Smile, a multinational (but mostly french) company that focuses on the development and hosting of websites. The main theme on this internship was the automation and industrialisation of deployment processes on new platforms hosted by Smile.
+
+In order to achieve this goal I divided my work between upgrading current software architecture based on puppet, an orchestration and automation tool that runs on every node in the production system ; and adding another orchestration tool, Ansible, to the system.
+
+At first the project was heading towards the complete elimination of puppet from our system, replacing it with Ansible. But as we explored Ansible we came to realisation that it could not replace Puppet entirely, though it could take off some load from the puppet master server. In the end we decided to integrate Ansible as a side tool to deploy new hosts and virtual machines, and to create a new puppet master server with the latest version of Puppet so that we could integrate specific projects using (for instance) Debian 9 or PHP 7.
+\subsection*{Keywords}
+Automation, DevOps, Hosting, Linux systems
 
 
 \chapter*{Glossaire}
@@ -92,13 +97,27 @@ Merci aussi à tout le reste de l'équipe Smile Outsourcing, avec qui j'ai discu
 
 \subsection{Le stage}L'intitulé de mon stage, "Industrialisation des méthodes de déploiement de plates-formes d'hébergement Internet", suggère la mise en place et la convergence de plusieurs outils pour améliorer à la fois les temps de traitement et la qualité des déploiements de plates-formes d'hébergement. Dans cette optique le travail a été décomposé en plusieurs phases, la première consistant à comprendre le fonctionnement du système existant, l'architecture réseau des serveurs de production de Smile, la base technique en place, ainsi que le périmètre impacté par l'ensemble des modifications à apporter. Il a fallu ensuite mettre en place ou améliorer des solutions dans un souci d'amélioration continue, tout en maintenant et en adaptant l'existant de manière à permettre la cohabitation entre les systèmes de production d'aujourd'hui et de demain.
 
-Avant de parler plus en détail des tâches que j'ai été amené à accomplir, une présentation de l'entreprise qui m'a accueilli pendant ces six mois.
+Avant de parler plus en détail des tâches que j'ai été amené à accomplir, je vais rapidement faire une présentation de l'entreprise qui m'a accueilli pendant ces six mois.
 
 \subsection{Présentation de Smile}
-\lipsum
-Historique
 
-Description offre commerciale
+\subsubsection{Présentation générale}
+Smile est une société fondée en 1991\footnote{qui est aussi l'année du lancement du World Wide Web et de la mort de Freddy Mercury. Comme quoi.}, par Alain Arditi, Patrice Bertrand, Cyrille Chignardet et Jérôme Prompsy. La société se place à ses débuts sur le secteur des applications clients/serveur développés en mode RAD.
+
+En 1995-6, Smile profite de la démocratisation du World Wide Web et met en place le premier site bancaire sur le web pour le compte du Crédit Lyonnais.En 2001 Smile amorce un virage et entre dans le monde de l'Open Source et continue de croître jusqu'à présente dans de multiples bureaux en France, en Espagne, en Belgique, au Luxembourg, en Suisse, au Pays-Bas, en Ukraine, en Côte-d'Ivoire et au Maroc.
+
+A l'heure actuelle, Smile compte environ 1200 employés répartis dans dix-huit agences, et continue de développer son coeur de commerce sur les technologies du web (Développement web, CMS, e-commerce, décisionnaire, Cloud computing, hébergement...) mais aussi depuis peu dans l'IoT, et ce toujours en se basant sur des technologies et des logiciels Open Source.
+
+\subsubsection{Présentation de l'équipe Outsourcing}
+
+J'ai effectué mon stage dans l'équipe Outsourcing de Smile, en charge du réseau de production de Smile et de l'hébergement des sites web et des webservices. Cette équipe est répartie entre l'agence de Paris et l'agence de Montpellier (où j'ai effectué mon stage).
+
+On distingue trois équipes dans l'entité \emph{Smile Outsourcing} :
+\begin{itemize}
+	\item Les chefs de projet (CP), en charge du déploiement de plateforme techniques et du suivi des projets techniques ainsi que des ressources associées selon les besoins exprimés par le client.
+	\item L'équipe de production, dédiée au troubleshooting du système de production et aux demandes des clients concernant l'hébergement, ainsi qu'au traitement des tickets relevant également de ce périmètre
+	\item L'équipe Infra, que j'ai intégré pendant la durée de mon stage, dont le périmètre est plus centré sur la maintenance et l'amélioration des outils internes, du réseau de production, ainsi que des serveurs physiques, sans contact direct avec le client.
+\end{itemize}
 
 \chapter{Découverte du réseau de production et de la base technique}
 
@@ -228,7 +247,7 @@ Au cours de cette exécution puppet remplit des fichiers de configuration, insta
 
 \chapter{Les évolutions apportées}
 
-Lors de mon arrivée chez Smile, l'équipe Infra, que j'ai intégré, était en pleine restructuration du fonctionnement interne. Nous avons ainsi mené plusieurs projets en parallèle que je vais présenter ici, notamment la mise en place d'un serveur puppetmaster en version 4 et la migration des modules puppet utilisés par smile, jusque là en version 2 ou 3 ; L'intégration de l'outil d'automatisation \emph{Ansible} au système d'orchestration de la production ; Et une étude pour déterminer le nouveau socle de virtualisation de Smile.
+Lors de mon arrivée chez Smile, l'équipe Infra, que j'ai intégré, était en pleine restructuration du fonctionnement interne. Nous avons ainsi mené plusieurs projets en parallèle que je vais présenter ici, notamment la mise en place d'un serveur puppetmaster en version 4 et la migration des modules puppet utilisés par smile, jusque là en version 2 ou 3 ; L'intégration de l'outil d'automatisation \emph{Ansible} au système d'orchestration de la production ; Et une étude pour déterminer le nouveau socle de virtualisation de Smile. En plus de ces tâches majeures, j'ai mené des missions parallèles s'apparentant plus à l'exploitation courante (optimisation/écriture de scripts, ticketing, fixs divers sur des manifests puppet...) que je ne détaillerai pas ici.
 
 \section{Choix du socle de virtualisation}
 
@@ -243,7 +262,10 @@ Cependant lxd, étant un produit de Canonical, n'est disponible que sous Ubuntu.
 \section{Intégration d'Ansible}
 
 Un autre projet dans le cadre de l'amélioration et l'industrialisation de la production, nous avons intégré l'utilisation d'Ansible à l'ensemble des outils de Smile, que je vais brièvement présenter ici.
-\newpage
+
+Dans un premier temps, le projet était de remplacer entièrement Puppet avec Ansible, mais au fur et à mesure de notre exploration de l'outil, celui-ci ne suffirait pas à combler les besoins que couvre Puppet. Il a donc été décidé de conserver Puppet tout en intégrant Ansible aux outils de Smile, pour toutes les tâches de déploiement afin d'alléger la charge du serveur Puppet.
+
+
 \subsection{Présentation d'Ansible}
 
 \subsubsection{Présentation générale}
@@ -254,6 +276,7 @@ Ansible utilise ensuite une série de connexions ssh pour pousser des scripts py
 \subsubsection{Fonctionnement}
 
 Ansible utilise un fichier \emph{inventory} dans le style des fichiers ini (exemple ci-après) pour faire le lien entre un nom et un groupe de machines comme suit :
+\newpage
 \begin{framed}
 \begin{Verbatim}[fontsize=\scriptsize]
 [webservers]
@@ -290,7 +313,7 @@ Ansible se voulant plus simple que Puppet ou d'autres outils d'automatisation, l
 
 Un playbook peut contenir plusieurs \emph{plays}, qui sont un ensemble d'instructions exécutées sur un groupe de machines. Il est donc possible de configurer plusieurs types d'hosts en une seule run Ansible, contrairement à Puppet. Par exemple, au début de mon stage, l'ajout d'un noeud à l'architecture gérée par Puppet nécessitait de se logger sur le noeud, de lancer une première run puppet afin de générer une CSR (Certificate Signing Request) à l'intention de l'autorité de certification du puppetmaster, puis de se connecter sur le puppetmaster pour signer à la main cette CSR, et enfin de se reconnecter au noeud pour faire une run puppet effective. Grâce à un playbook Ansible conçu durant mon stage et contenant trois plays successives (une sur le noeud, une sur le puppetmaster et une deuxième sur le noeud), il est désormais possible d'effectuer toutes ces tâches en une seule commande ansible.
 
-Comme Puppet, l'idempotence est une notion importante avec Ansible, plusieurs runs successives exécutées sur le même serveur devant retourner le même état. On peut donc être certain de l'état d'un système à l'issue d'une run vis-à-vis des configurations et des paquets installés.
+Comme pour Puppet, l'idempotence est une notion importante avec Ansible, plusieurs runs successives exécutées sur le même serveur devant retourner le même état. On peut donc être certain de l'état d'un système à l'issue d'une run vis-à-vis des configurations et des paquets installés.
 
 \paragraph*{}Un \emph{module} Ansible est l'unité d'instruction d'Ansible. Un module est comparable à une ressource Puppet, chaque module correspondant à un script python poussé par Ansible sur les noeuds pendant une run. Il existe de nombreux modules, des plus génériques (un module \emph{raw} pour exécuter une commande ssh directe (peu recommandé)) aux plus spécifiques (par exemple \emph{rabbitmq\_plugin} pour ajouter des plugins au système de messages queue RabbitMQ)
 
@@ -457,21 +480,15 @@ Une fois la base de l'infrastructure de puppetmaster-v4 installée, en même tem
 
 Il existe aussi un repository dédié au versionning des hieradata, mais celui-ci est partagé entre environnements de qualification et de production.
 
-\subsection{Script de mise en production}
+\subsection{Scripts de gestion de puppet}
 
-% comparaison des versions
+Pour synchroniser les environnements de production et de qualification, après qu'une modification de module ait fait ses preuves sur un ensemble de serveurs de tests, nous utilisons un script ruby qui se charge d'appeler un autre script pour récapituler les différences de versions entre qualification et production, ou de rajouter les modifications de qualification vers production.
 
-\subsection{Script de gestion de la puppetdb}
+Lors du portage de ces scripts vers puppetmaster-v4, cependant, une partie des bibliothèques ruby utilisées ont été abandonnées. Ces scripts ayant été écrits par la même personne qui s'était chargée de la première version de l'infrastructure puppet, ce problème de bibliothque a été l'occasion de se réapproprier son fonctionnement, et de l'harmoniser avec les standards de Smile Outsourcing (des scripts en python et en bash)
 
-% python pour voir les ressources
+Le script de comparaison des versions des modules puppet, basé sur le fichier metadata.json (comme vu plus haut dans la présentation de l'architecture d'un module puppet) présent dans chaque module, a donc été réécrit en bash et intégré à l'ensemble des outils Puppet.
 
-\chapter{Autres missions}
-
-En plus des missions mentionnées plus haut, il m'a été confié d'autres tâches en parallèle, qui relèvent plus des tâches d'exploitation courante
-
-% puppet
-% ticketing
-% scripting
+Un autre script, qui n'était pas en place sur puppetmaster1, a été développé au cours de ce chantier. Ce script basé sur le module python \emph{pypuppetdb} permet à un utilisateur loggé sur puppetmaster-v4 de faire des appels vers la puppetdb pour accéder aux ressources (exportées ou non) d'un noeud, et permet donc de vérifier le bon fonctionnement de la génération des ressources, mais aussi de les purger dans la puppetdb, de lister les noeuds gérés par puppetmaster-v4, etc.
 
 \chapter{Conclusion, bilan}
 \lipsum[1]
