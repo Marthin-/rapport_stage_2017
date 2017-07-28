@@ -45,6 +45,7 @@
 
 \maketitle
 
+
 \section*{Résumé}
 Dans le cadre de ma dernière année d'études à l'INSA Centre-Val-de-Loire, j'ai effectué un stage de six mois, l'aboutissement de trois ans passés à l'institut. J'ai effectué ce stage au sein de l'équipe Outsourcing de l'entreprise Smile, à Montpellier. Smile est une entreprise d'hébergement et de développement de websites/webservices française, s'appuyant pour cela sur le monde de l'Open Source.
 
@@ -74,7 +75,6 @@ Automation, DevOps, Hosting, Linux systems
 \chapter*{Glossaire}
 
 \begin{itemize}
-
 \item{\textbf{Automatisation}}: Ensemble de techniques permettant le déroulement autonome d'un système, en interconnectant plusieurs élements de ce système ; Par exemple, la génération d'un fichier pdf et l'envoi de ce fichier par mail, tout ceci sans intervention directe humaine.
 
 \item{\textbf{Container}}: système d'exploitation isolé à l'intérieur d'un autre système, permettant ainsi à un hôte de virtualisation de faire tourner plusieurs systèmes sur une seule machine physique. (ex. de systèmes de conteneurisation : docker, lxc, openVZ)
@@ -171,7 +171,7 @@ Ci-après, un schéma récapitulatif des interractions au cours d'une puppetrun.
 
 Avant de poursuivre, il est nécessaire d'introduire un peu de vocabulaire spécifique à puppet.
 
-Pour savoir quelles instructions exécuter sur un noeud, puppet utilise un système de \emph{manifests} écrits en "langage puppet", un langage à la syntaxe assez spécifique (voir un exemple de manifest puppet en annexe 1) mais relativement simple à comprendre, ainsi qu'un système de \emph{templating} basé sur \emph{erb} (Embedded RuBy) pour pousser des fichiers de configuration sur les noeuds. Ces manifests se divisent en classes, elles-mêmes divisées en ressources. Avec puppet, tout est ressource.\footnote{Paracelse ajouterait que "rien n'est ressource, c'est la dose qui fait la ressource."} Une ressource est en effet l'unité fondamentale d'instruction en puppet. Par exemple, déclarer une ressource de type \emph{file} dans un manifest donnera l'instruction de transférer un fichier (depuis le puppetmaster ou n'importe quelle URI, ou encore d'après un template), tandis qu'une ressource \emph{exec} permettra d'exécuter une commande directement dans le shell de la machine distante (encore une fois, voir en annexe 1 pour un exemple de code puppet)
+Pour savoir quelles instructions exécuter sur un noeud, puppet utilise un système de \emph{manifests} écrits en "langage puppet", un langage à la syntaxe assez spécifique (voir un exemple de manifest puppet en annexe A) mais relativement simple à comprendre, ainsi qu'un système de \emph{templating} basé sur \emph{erb} (Embedded RuBy) pour pousser des fichiers de configuration sur les noeuds. Ces manifests se divisent en classes, elles-mêmes divisées en ressources. Avec puppet, tout est ressource.\footnote{Paracelse ajouterait que "rien n'est ressource, c'est la dose qui fait la ressource."} Une ressource est en effet l'unité fondamentale d'instruction en puppet. Par exemple, déclarer une ressource de type \emph{file} dans un manifest donnera l'instruction de transférer un fichier (depuis le puppetmaster ou n'importe quelle URI, ou encore d'après un template), tandis qu'une ressource \emph{exec} permettra d'exécuter une commande directement dans le shell de la machine distante (encore une fois, voir en annexe A pour un exemple de code puppet)
 
 Par ailleurs, Puppet utilise un système dit de \emph{ressources exportées} pour partager des informations entre différents noeuds. Le principe est simple : En préfixant une ressource d'un arobase dans le code puppet, cette ressource est dite \emph{exportée}, c'est à dire qu'elle est stockée sur le puppetmaster dans une base de données appelée la puppetdb, et identifiée par un ou plusieurs tags.
 
@@ -302,7 +302,7 @@ Le fichier d'inventory par défaut est stocké dans /etc/ansible/inventory. Il e
 
 \begin{framed}magui@fonzie:~\$ ansible -i /mnt/nfs/ansible/shared\_inventory -m ping targets\end{framed}
 
-Ansible se voulant plus simple que Puppet ou d'autres outils d'automatisation, les instructions à lui passer n'utilisent pas de système de classe ou d'ENC. L'ensemble des instructions peut être soit passé directement en lignes de commandes (pour exécuter un seul module comme plus haut), soit dans un fichier yaml appelé \emph{playbook}. Un playbook décrit l'ensemble des \emph{modules} et des \emph{rôles} à exécuter, ainsi que les groupes de machines sur lesquels exécuter ces modules et ces \emph{modules}.\footnote{Un exemple de playbook Ansible est disponible à la fin de ce rapport, en annexe 2}
+Ansible se voulant plus simple que Puppet ou d'autres outils d'automatisation, les instructions à lui passer n'utilisent pas de système de classe ou d'ENC. L'ensemble des instructions peut être soit passé directement en lignes de commandes (pour exécuter un seul module comme plus haut), soit dans un fichier yaml appelé \emph{playbook}. Un playbook décrit l'ensemble des \emph{modules} et des \emph{rôles} à exécuter, ainsi que les groupes de machines sur lesquels exécuter ces modules et ces \emph{modules}.\footnote{Un exemple de playbook Ansible est disponible à la fin de ce rapport, en annexe B}
 
 \begin{figure}[htp]
 \centering
@@ -491,7 +491,263 @@ Le script de comparaison des versions des modules puppet, basé sur le fichier m
 Un autre script, qui n'était pas en place sur puppetmaster1, a été développé au cours de ce chantier. Ce script basé sur le module python \emph{pypuppetdb} permet à un utilisateur loggé sur puppetmaster-v4 de faire des appels vers la puppetdb pour accéder aux ressources (exportées ou non) d'un noeud, et permet donc de vérifier le bon fonctionnement de la génération des ressources, mais aussi de les purger dans la puppetdb, de lister les noeuds gérés par puppetmaster-v4, etc.
 
 \chapter{Conclusion, bilan}
-\lipsum[1]
-\lipsum[1]
 
+Au cours de mon stage, j'ai pu découvrir le monde de l'orchestration avec Puppet et Ansible, et participer à leur intégration au système de production de Smile. Aujourd'hui, la plupart des tâches d'administration et de déploiement de serveurs ne requièrent plus d'intervention directe sur un serveur, mais sont automatisées grâce à ces deux outils : Le déploiement d'un serveur "à neuf" se fait via PXE pour l'installation de l'OS, puis Ansible prend le relais pour configurer le réseau, installer puppet et les paquets essentiels. Puppet se charge de déployer les configurations de monitoring et de backup, ainsi que les configurations de bases de données, de serveurs web, d'accès ssh... Ansible permet ensuite d'installer lxc et de déployer des machines virtuelles à la volée avec des profils réseau et des accès déterminés à l'avance (VM \emph{privileged, unprivileged...})
+
+Ces six mois m'ont beaucoup apporté puisqu'ils m'ont permis de découvrir et d'explorer le monde de l'administration système dans un système de production comptant plus d'un millier de machines, mais aussi le monde de l'entreprise (ce que mes deux stages précédents, l'un en recherche, l'autre dans une entreprise d'une seule personne, ne m'avaient pas permis d'appréhender) et du service. J'ai également beaucoup appris sur les concepts liés à l'automatisation et à l'orchestration, qui, je pense, est un sujet qui va devenir de plus en plus présent dans le milieu de l'administration système dans les prochaines années.
+
+Ce stage a donc parfaitement répondu à mes attentes puisque je souhaitais effectuer un stage orienté technique et touchant de nombreux champs d'application, afin de pouvoir explorer un maximum d'aspects des métiers de l'administration système, tout en n'étant pas enfermé dans un seul système comme ç'aurait pu être le cas en travaillant sur un système interne à une entreprise. L'aspect Open Source de ce stage me semblait également intéressant, tant par conviction personnelle que pour confirmer qu'il est possible de construire de belles choses, des infrastructures robustes et efficaces, sans pour autant se limiter à des outils opaques.
+
+Enfin, avec Smile j'ai pu découvrir une équipe dynamique et agréable, construite autour d'une même conception de l'informatique et d'un amour pour l'Open Source ; Équipe avec laquelle j'aurai le plaisir de continuer à travailler une fois ce stage terminé.
+
+\appendix
+\chapter{Exemple de code puppet}
+
+Je vais maintenant présenter un module puppet typique, chargé de mettre en place les configurations pour faire des backups bacula.
+
+Le module a la structure suivante :
+
+\begin{Verbatim}[fontsize=\scriptsize]
+magui@puppetmaster-v4:~/puppet/modules/bacula (master)$ tree
+.
++-- files
+|   \-- init-bacula.conf
++-- manifests
+|   +-- client
+|   |   +-- config.pp
+|   |   +-- package.pp
+|   |   \-- service.pp
+|   +-- client.pp
+|   +-- director
+|   |   \-- nrpe.pp
+|   +-- director.pp
+|   +-- storage
+|   |   +-- config.pp
+|   |   +-- package.pp
+|   |   \-- service.pp
+|   \-- storage.pp
++-- metadata.json
+\-- templates
+    +-- backuptracker.d
+    |   \-- hostname.bacula.erb
+    +-- bacula-sd.conf.erb
+    +-- node-bacula-dir.conf.erb
+    +-- node-bacula-fd.conf.erb
+    \-- node-bacula-sd.conf.erb
+\end{Verbatim}
+
+Nous ne présenterons qu'une partie de ce module, la partie chargée de générer la configuration des clients bacula (le fichier client.pp et le contenu du répertoire client)
+
+Tout d'abord, présentons le fichier client.pp
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize]
+# Bacula client class: applies to each node which is saved using Bacula.
+# Each client needs 3 files (sd,fd,dir) sharing 2 different passwords :
+# - between SD and DIR
+# - between FD and DIR
+# Passwords are randomly generated in a way which is replayable: (we can
+# "randomly" regenerate the same passwords given the FQDN and the CA RSA key.pem
+# file.
+#
+class bacula::client {
+  if $racktables_platform_code == undef or $racktables_platform_code == 'unknown' {
+    warning("Unable to determine $fqdn's platform_code. Check Racktables.")
+  }
+  else {
+    puppetnode::announce::register { $title: }
+    include bacula::client::package
+    include bacula::client::config
+    include bacula::client::service
+  }
+}\end{Verbatim}
+\end{framed}
+
+Ce fichier, contenu à la racine du dossier \emph{manifests}, vérifie tout d'abord que la hiera (l'équivalent d'une variable) \$racktables\_platform\_code est bien définie. Suite à quoi, elle instancie une classe puppetnode::announce::register avec en argument la hiera \$title ; Cette classe permet d'informer les utilisateurs d'un serveur des classes puppet utilisées sur ce serveur en ajoutant une ligne au \emph{motd} (message of the day) affiché lors de la connexion.
+
+Après cette action, elle inclut trois fichiers inclus dans le dossier client : package.pp, config.pp et service.pp
+
+\subsubsection*{package.pp}
+
+Commençons par examiner package.pp :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize]
+# install bacula file-daemon package
+class bacula::client::package {
+  $bacula_fd = hiera_hash("bacula-fd")
+  package { $bacula_fd['package']:
+    ensure  => present,
+  }
+}\end{Verbatim}
+\end{framed}
+
+Le fichier package.pp est généralement utilisé pour installer les paquets nécessaires au fonctionnement d'un système. La notation \$bacula\_fd = hiera\_hash("bacula-fd") permet de stocker dans la variable puppet \$bacula\_fd non pas une valeur unique, mais une table de hachage (tableau de paires clés/valeurs) stockée sous forme de hieradata.
+
+L'exécution de la ressource \emph{package} sur cette table de hachage permet d'installer l'ensemble des paquets listés dedans. En changeant la ligne
+\begin{Verbatim}[fontsize=\scriptsize]
+    ensure  => present,
+\end{Verbatim}
+
+par la ligne
+
+\begin{Verbatim}[fontsize=\scriptsize]
+    ensure  => absent,
+\end{Verbatim}
+on peut à la place désinstaller les paquets listés dans la hiera.
+
+Dans le cas du client bacula, le seul paquet installé par puppet est le paquet \emph{bacula-client}
+
+\subsubsection*{service.pp}
+
+Le contenu du fichier service.pp :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize]
+# Ensure bacula-fd will start
+class bacula::client::service {
+  require bacula::client::package
+  require bacula::client::config
+  $bacula_fd = hiera_hash("bacula-fd")
+
+  service { $bacula_fd['service']:
+    ensure  => running,
+    enable  => true,
+  }
+}\end{Verbatim}
+\end{framed}
+
+La ressource \emph{service} permet de lancer (enable => true), d'arrêter ou de redémarrer des services system V ou des units systemd.
+
+La particularité de ce fichier est qu'il contient deux conditions d'ordonnancement \emph{require}, qui sont donc appliquées avant le contenu de la classe service elle-même.
+
+\subsubsection*{config.pp}
+
+Le fichier le plus important est config.pp : 
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\tiny,numbers=left]
+class bacula::client::config {
+  require bacula::client::package
+
+  $bacula_fd = hiera_hash("bacula-fd")
+  validate_hash( $bacula_fd )
+
+  # Required by the template
+  $piddir = $bacula_fd['piddir']
+  $datadir = $bacula_fd['datadir']
+  validate_absolute_path( $piddir, $datadir)
+
+  # Per-node storage daemon configuration:
+  $bacula_sd_config = hiera_hash('bacula-sd-config', undef)
+  if $bacula_sd_config != undef {
+    validate_hash( $bacula_sd_config )
+    $bacula_sd_address = $bacula_sd_config['address']
+    $bacula_sd_device = chompchar($bacula_sd_config['device'], "/")
+    validate_absolute_path( $bacula_sd_device )
+    validate_string( $bacula_sd_address )
+
+    # Global storage daemon configuration (available storages and devices)
+    $bacula_sd_data = hiera_hash('bacula-sd-data')
+
+    $valid_sd_addresses = keys($bacula_sd_data)
+    validate_array( $valid_sd_addresses )
+    if !($bacula_sd_address in $valid_sd_addresses ) {
+      $valid_sd_addresses_str = join( $valid_sd_addresses, ',')
+      fail("Invalid storage daemon device $bacula_sd_device. Valids are '$target_sd_devices_str'")
+    }
+
+    $valid_sd_devices = $bacula_sd_data[$bacula_sd_address]['devices']
+    # If the storage device given is incorrect: print an error and fail the compilation
+    if !($bacula_sd_device in $valid_sd_devices) {
+      $target_sd_devices_str = join( $valid_sd_devices, ',')
+      fail("Invalid storage daemon device $bacula_sd_device. Valids are '$target_sd_devices_str'")
+    }
+
+	$bacula_pwd = genpasswd(45, $hostname)
+    $bacula_dir_config = hiera_hash('bacula-director-config')
+    $bacula_dir_address = $bacula_dir_config['address']
+    $bacula_full_retention = 61# $bacula_dir_config['full-retention'].scanf("%i")
+    $bacula_full_interval = $bacula_dir_config['full-interval']
+    $bacula_diff_retention = $bacula_dir_config['diff-retention']
+    $bacula_job_retention = $bacula_dir_config['job-retention']
+    $bacula_job_definition = $bacula_dir_config['job-definition']
+
+    validate_string($bacula_dir_address)
+    if $bacula_dir_address == undef {
+      fail("Variable bacula_dir_address is undef.")
+    }
+
+    file { $bacula_fd['cfgfile']:
+      ensure  => present,
+      content => template("bacula/node-bacula-fd.conf.erb"),
+      notify  => Service[$bacula_fd['service']],
+    }
+
+    $bacula_dir_mv_cmd = "bacula-dir-config-mv-${hostname}-conf-to-old"
+
+    ## Export config file on 'targeted' bacula director
+    @@file { "$bacula_dir_cfgdir/${hostname}.conf":
+      ensure  => present,
+      content => template("bacula/node-bacula-dir.conf.erb"),
+      notify  => Exec[$bacula_dir_mv_cmd],
+      tag     => [$environment, $bacula_dir_address, "per-node-config-bacula-dir"],
+    }
+
+    # When exporting, move the old config file in a safe place
+    @@exec { $bacula_dir_mv_cmd:
+      refreshonly => true,
+      path        => ['/usr/bin', '/usr/sbin', '/bin'],
+      command     => "mv /etc/bacula/config/${hostname}.conf /etc/bacula/config-old/${hostname}.conf",
+      onlyif      => "test -f /etc/bacula/config/${hostname}.conf",
+      tag         => [$environment, $bacula_dir_address, "per-node-config-bacula-dir"],
+    }
+
+    # This command will create a new catalog if it does not exists
+    @@exec { "bacula-dir-create-catalog-${hostname}":
+      path        => ['/usr/bin', '/usr/sbin', '/bin'],
+      command     => "/etc/bacula/smile-scripts/create_catalog.sh ${hostname}",
+      unless      => "sudo -u postgres psql -c '\\l' | grep '${hostname}-catalog'",
+      tag         => [$environment, $bacula_dir_address, "per-node-config-bacula-dir"],
+    }
+
+    $bacula_sd_mv_cmd = "bacula-sd-config-mv-${hostname}-conf-to-old"
+
+    ## Export config file on 'targeted' bacula storage daemon
+    @@file { "$bacula_sd_cfgdir/${hostname}.conf":
+      ensure  => present,
+      content => template("bacula/node-bacula-sd.conf.erb"),
+      notify  => [ Exec[$bacula_sd_mv_cmd], Service[$bacula_sd['service']] ],
+      tag     => [$environment, $bacula_sd_address, "per-node-config-bacula-sd"],
+    }
+
+    # When exporting, move the old config file in a safe place
+    @@exec { $bacula_sd_mv_cmd:
+      path        => ['/usr/bin', '/usr/sbin', '/bin'],
+      refreshonly => true,
+      command     => "mv /etc/bacula/config/${hostname}.conf /etc/bacula/config-old/${hostname}.conf",
+      onlyif      => "test -f /etc/bacula/config/${hostname}.conf",
+      tag         => [$environment, $bacula_sd_address, "per-node-config-bacula-sd"],
+    }
+    file { $datadir:
+      ensure  => directory,
+      owner   => 'bacula',
+      group   => 'bacula',
+    }
+
+    file { $piddir:
+      ensure  => directory,
+      owner   => 'bacula',
+      group   => 'daemon',
+    }
+  }
+  else {
+    fail("No bacula configuration done because hiera 'bacula-sd-config' key not found.")
+  }
+}\end{Verbatim}
+\end{framed}
+
+Pour le résumer, ce code génère un mot de passe aléatoire, le stocke dans la puppetdb (le préfixe @@ devant une ressource permet de l'exporter) et exporte plusieurs fichiers de configurations basés sur des templates (localisées dans /bacula/templates/). On peut voir deux types de ressources principales : Les ressources de type \emph{exec} permettent d'exécuter une commande directement sur un noeud (par exemple mv /etc/bacula/config/${hostname}.conf /etc/bacula/config-old/${hostname}.conf), et les ressources de type \emph{file} qui permettent de pousser un fichier, soit en copiant un fichier depuis une URL, soit en remplissant une template.
+
+\chapter{Exemple de code Ansible}
 \end{document}
