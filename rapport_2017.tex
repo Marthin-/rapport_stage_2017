@@ -1,4 +1,4 @@
-\documentclass[14 pt]{extreport}
+\documentclass[14 pt,a4paper]{extreport}
 
 \usepackage{extsizes}
 \usepackage[utf8]{inputenc} %pour accents
@@ -63,7 +63,7 @@ Merci aussi à tout le reste de l'équipe Smile Outsourcing, avec qui j'ai discu
 \newpage
 \subsection*{Summary}
 
-For the last six months I have been in a internship in Smile, a multinational (but mostly french) company that focuses on the development and hosting of websites. The main theme on this internship was the automation and industrialisation of deployment processes on new platforms hosted by Smile.
+For the last six months I have been in a internship in Smile, a multinational (but mostly French) company that focuses on the development and hosting of websites. The main theme of this internship was the automation and industrialisation of deployment processes on new platforms hosted by Smile.
 
 In order to achieve this goal I divided my work between upgrading current software architecture based on puppet, an orchestration and automation tool that runs on every node in the production system ; and adding another orchestration tool, Ansible, to the system.
 
@@ -500,6 +500,18 @@ Ce stage a donc parfaitement répondu à mes attentes puisque je souhaitais effe
 
 Enfin, avec Smile j'ai pu découvrir une équipe dynamique et agréable, construite autour d'une même conception de l'informatique et d'un amour pour l'Open Source ; Équipe avec laquelle j'aurai le plaisir de continuer à travailler une fois ce stage terminé.
 
+\chapter{Bibliographie, sitographie}
+
+\begin{itemize}
+	\item \emph{Ansible for DevOps}, \textbf{Jeff Geerling}, Leanpub 2016
+	\item \emph{Pro Puppet}, \textbf{James Turnbull, Jeffrey McCune}, Apress 2016 
+	\item \emph{Ansible From Beginner to Pro}, \textbf{Michael Heap}, Apress 2016
+	\item \url{https://docs.ansible.com/}
+	\item \url{https://docs.puppet.com/}
+	\item \url{https://serverfault.com/}
+	\item \url{https://debian-handbook.info/browse/fr-FR/stable/}
+\end{itemize}
+
 \appendix
 \chapter{Exemple de code puppet}
 
@@ -537,6 +549,8 @@ magui@puppetmaster-v4:~/puppet/modules/bacula (master)$ tree
 \end{Verbatim}
 
 Nous ne présenterons qu'une partie de ce module, la partie chargée de générer la configuration des clients bacula (le fichier client.pp et le contenu du répertoire client)
+
+\subsubsection*{client.pp}
 
 Tout d'abord, présentons le fichier client.pp
 
@@ -750,4 +764,382 @@ class bacula::client::config {
 Pour le résumer, ce code génère un mot de passe aléatoire, le stocke dans la puppetdb (le préfixe @@ devant une ressource permet de l'exporter) et exporte plusieurs fichiers de configurations basés sur des templates (localisées dans /bacula/templates/). On peut voir deux types de ressources principales : Les ressources de type \emph{exec} permettent d'exécuter une commande directement sur un noeud (par exemple mv /etc/bacula/config/${hostname}.conf /etc/bacula/config-old/${hostname}.conf), et les ressources de type \emph{file} qui permettent de pousser un fichier, soit en copiant un fichier depuis une URL, soit en remplissant une template.
 
 \chapter{Exemple de code Ansible}
+
+Je vais ici présenter un exemple de playbook Ansible chargé d'effectuer la configuration d'un réseau en bonding entre deux interfaces ethernet ainsi que la configuration d'un vlan et d'un bridge. L'arborescence du projet est la suivante :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\tiny]
+.
++-- ansible-bonding
+|   +-- defaults
+|   |   \-- main.yml
+|   +-- files
+|   |   +-- get_link.sh
+|   |   \-- interfaces
+|   +-- handlers
+|   |   \-- main.yml
+|   +-- meta
+|   |   \-- main.yml
+|   +-- tasks
+|   |   +-- bond_autoconf.yml
+|   |   +-- debian.yml
+|   |   +-- main.yml
+|   |   \-- redhat.yml
+|   \-- templates
+|       +-- bond_Debian
+|       +-- bond_master_RedHat
+|       \-- bond_slave_RedHat
++-- ansible-vlan
+|   +-- defaults
+|   |   \-- main.yml
+|   +-- files
+|   |   \-- interfaces
+|   +-- handlers
+|   |   \-- main.yml
+|   +-- meta
+|   |   \-- main.yml
+|   +-- README.md
+|   +-- tasks
+|   |   \-- main.yml
+|   \-- templates
+|       +-- redhat_bridge
+|       +-- redhat_vlan
+|       \-- vlan_debian
++-- inventory
+\-- playbook.yml\end{Verbatim}
+\end{framed}
+
+On peut voir à la racine du projet le fichier \emph{inventory}, en charge des liaisons entre groupes de machines Ansible et leur correspondance physique, comme on peut le voir dans le fichier :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize]
+[test]
+labs-host2.vpn.ti.smile.fr
+\end{Verbatim}
+\end{framed}
+
+On peut également constater la présence du fichier \emph{playbook.yml}, contenant l'ensemble des \emph{plays} Ansible à réaliser, avec le contenu suivant :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize,numbers=left]
+---
+
+- hosts: test
+  remote_user: root
+
+  roles:
+   - role: ansible-bonding
+     bridge_default: "101"
+     device: "bond0"
+     bridge_comment: "Default bridge/vlan"
+   - role: ansible-vlan
+     bridge:
+       - number: "103"
+         comment: "vlan n.103"
+\end{Verbatim}
+\end{framed}
+
+Détaillons ligne par ligne :
+\begin{itemize}
+	\item Les - - - de la première ligne indiquent qu'il s'agit d'un fichier en yaml
+	\item le champ "- hosts" indique quel groupe du fichier inventory doit appliquer la (ou les) \emph{play}
+	\item remote\_user indique quel utilisateur sur la machine distante exécutera les scripts
+\end{itemize}
+
+Vient ensuite la liste des tasks et des rôles à appliquer. Dans ce playbook spécifique, aucune task ne s'applique, mais le playbook utilise deux rôles que je vais présenter ici, après une brève présentation de structure d'un rôle Ansible :
+
+\subsubsection*{Structure typique d'un rôle Ansible}
+
+Un rôle Ansible contient quelques dossiers essentiels, contenant tous des fichiers yaml. Chaque dossier (sauf les dossiers \emph{files} et \emph{templates} contiennent au moins un fichier \emph{main.yml}, ce qui peut prêter à confusion lors de l'édition de multiples fichiers.
+\begin{itemize}
+	\item un dossier \emph{tasks} contenant les instructions essentielles
+	\item un dossier \emph{defaults} contenant les valeurs par défaut des variables
+	\item un dossier \emph{meta} contenant les informations de dépendances du rôle et celles sur l'auteur, la license...
+	\item un dossier \emph{files} qui contient les fichiers à pousser directement sur l'hôte (à la différence des templates)
+	\item un dossier \emph{templates} avec différentes templates au format jinja2 (qui permet d'utiliser du code python dans les templates)
+	\item un dossier \emph{handlers} comme décrit dans la partie "Description d'Ansible"
+	\item un dossier \emph{one\_ring} pour les gouverner tous et dans les ténèbres les lier.
+\end{itemize}
+
+\subsubsection*{Rôle ansible-bonding}
+
+Ce rôle est chargé de réaliser automatiquement un bonding entre deux interfaces ethernet. Plusieurs contraintes se posent : Si le serveur possède plus de deux interfaces, s'il ne possède pas suffisament d'interfaces actives, s'il est déjà paramétré... Dans tous ces cas le rôle adapte sa configuration.
+
+Commençons par le contenu de ansible-bonding/tasks/main.yml :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize,numbers=left]
+---
+
+- include: 'debian.yml'
+  when: ansible_os_family == 'Debian'
+
+- include: 'redhat.yml'
+  when: ansible_os_family == 'RedHat'
+
+- include: 'bond_autoconf.yml'
+  tags: configuration
+
+\end{Verbatim}
+\end{framed}
+
+On voit que le comportement est différent selon que la famille d'OS gérée est de type RedHat (hôtes de virtualisation sous CentOS) ou Debian (hôtes de virtualisation sous Ubuntu), ceci car les paquets à installer ne sont pas les mêmes entre ces deux familles. En faisant un cat redhat.yml on peut voir qu'il contient 
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize,numbers=left]
+---
+
+- name: RedHat | Ensure bridge-utils is present
+  yum:
+    name: bridge-utils
+    state: present
+
+- name: RedHat | Install facter
+  yum:
+    name: facter
+    state: present
+
+- name: RedHat | Install unbound
+  yum:
+    name: unbound
+    state: present
+\end{Verbatim}
+\end{framed}
+
+Le module Ansible \emph{yum} permet d'utiliser le gestionnaire de paquets de CentOS dans les playbooks Ansible. Ici, on installe les paquets \emph{bridge-utils, facter} et \emph{unbound}.
+
+Cependant si on regarde le fichier debian.yml :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\tiny,numbers=left]
+---
+
+- name: Debian | Ensure bridge-utils is present
+  apt:
+    name: bridge-utils
+    state: present
+
+- name: Debian | Install facter
+  apt:
+    name: facter
+    state: present
+
+- name: Debian | Ensure ifenslave is present
+  apt:
+    name: ifenslave
+    state: present
+
+- name: Debian | Ensure vlan is present
+  apt:
+    name: vlan
+    state: present
+
+- name: Debian | Ensure unbound is present
+  apt:
+    name: unbound
+    state: present
+ 
+- name: Debian | Backups old /etc/network/interfaces in /etc/network/.interfaces.old
+  shell: \[ -f /etc/network/.interfaces.old \] || cp /etc/network/interfaces /etc/network/.interfaces.old
+  register: bkp
+
+- name: Debian | Copy new interfaces file to source interfaces.d
+  copy:
+    src: interfaces
+    dest: /etc/network/interfaces
+    owner: root
+    group: root
+    mode: 0644
+  tags: configuration
+
+- name: Debian | Create directory for interface config files
+  file:
+    path: '{{ if_net_path[ansible_os_family|lower] }}'
+    state: directory
+  tags: configuration
+
+\end{Verbatim}
+\end{framed}
+
+On voit que ce fichier installe les paquets \emph{bridge-utils, facter, ifenslave, vlan, unbound}, lance une commande directe (avec le module Ansible \emph{shell}) pour faire un backup de l'ancien fichier de configuration réseau (en cas de problème, il suffira de restaurer à distance ce fichier depuis une IDRAC\footnote{Un outil de Dell permettant d'obtenir une connexion distante à une machine de façon physique, même si cette machine n'est plus connectée au réseau. Elle permet entre autre de faire des reboots electriques, ou de récupérer un lien vers une machine au réseau mal configuré.}). Le mot clef \emph{register} permet d'enregistrer le code de retour de la commande pour adapter le comportement du playbook en cas d'échec par exemple. Enfin il copie un fichier de configuration basique (le fichier présent dans ansible-bonding/files) et crée un répertoire /etc/network/interfaces.d sur la machine distante.
+
+Maintenant que la partie spécifique à chaque distribution est terminée, examinons le fichier bond\_autoconf.yml :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\tiny,numbers=left]
+---
+
+- name: "Auto| Checks if previous bonding has been done"
+  fail: msg="Previous bonding configuration has been found, aborting..."
+  when: (ansible_interfaces | intersect(['bond0']))[0] is defined
+
+# If we don't provide Bridge address in group_vas we use the IP address already defined throught the PXE install.
+- name: "Auto| Get bond ip from facter"
+  set_fact:
+    bond_address: "{{ ansible_default_ipv4.address }}"
+  when: bond_address is undefined
+
+- name: "Auto| print ip"
+  debug:
+    msg: "IP {{ bond_address }} will be used"
+
+- name: "Transfer get_link.sh script"
+  copy: src=get_link.sh dest=/tmp mode=0755
+
+# If user doesn't provide its as group_vars, auyomaticaly determining slaves interfaces thah will be used in the bonding config.
+- name: "Run get_link.sh script"
+  shell: /tmp/get_link.sh
+  register: links
+
+- debug: msg="{{ links.stdout }}"
+
+- name: "Auto| Assign main slave"
+  set_fact:
+     bond_slaves_main: "{{ links.stdout_lines[0] }}"
+  when: bond_slaves_main is undefined
+
+- name: "Auto| Assign fallback slave"
+  set_fact:
+    bond_slaves_fallback: "{{ links.stdout_lines[1] }}"
+  when: bond_slaves_fallback is undefined and links.stdout_lines[1] != bond_slaves_main
+
+# TODO : To improve (if the interface provided by the user doesn't have link)
+- name: "Auto| Fails when not enough interface are up and active"
+  fail: msg="Not enough active interfaces for proper bonding ! Please check interface configuration !"
+  when: bond_slaves_main is undefined or bond_slaves_fallback is undefined
+  
+- name: "Auto| Print bond slaves"
+  debug:
+    msg: "bond_slaves: {{ bond_slaves_main }} & {{ bond_slaves_fallback }}"
+
+- name: "Auto| Get/set netmask"
+  set_fact:
+    bond_netmask: "{{ ansible_default_ipv4.netmask }}"
+  when: bond_netmask is undefined
+
+- name: "Auto| Print netmask"
+  debug:
+    msg: "Netmask: {{ bond_netmask }}"
+
+- name: "Auto| Get/set Gateway"
+  set_fact:
+    bond_gateway: "{{ ansible_default_ipv4.gateway }}"
+  when: bond_gateway is undefined
+
+- name: "Auto| Print Gateway"
+  debug:
+    msg: "Gateway: {{ bond_gateway }}"
+
+- name: "Auto| Get/set DNS nameservers"
+  set_fact:
+    dns_nameservers: "{{ ansible_dns.nameservers[0] }} 127.0.0.1"
+  when: dns_nameservers is undefined
+
+- name: "Auto| Get/set DNS search"
+  set_fact:
+    dns_search: "{{ ansible_dns.search[0] }}"
+  when: dns_search is undefined
+
+- name: "Auto| Print DNS"
+  debug:
+    msg: "DNS nameservers: {{ dns_nameservers }}, dns search: {{ dns_search }}"
+
+- name: "Auto| Create network configuration file for bond devices"
+  template:
+    src: "bond_Debian"
+    dest: "/etc/network/interfaces.d/ifcfg-{{ device }}"
+  when: ansible_os_family|lower == "debian"
+
+- name: "Auto| Create network configuration file for bond device master, slave)"
+  template:
+    src: "bond_master_RedHat"
+    dest: "{{ if_net_path[ansible_os_family|lower] }}/ifcfg-{{ device }}"
+  when: ansible_os_family|lower == "redhat"
+
+- name: "Auto| Create network configuration file for bond devices (slaves)"
+  template:
+    src: 'bond_slave_RedHat'
+    dest: "{{ if_net_path[ansible_os_family|lower] }}/ifcfg-{{ item }}"
+  with_items:
+    - "{{ bond_slaves_main }}"
+    - "{{ bond_slaves_fallback }}"
+  when: ansible_os_family|lower == "redhat"
+\end{Verbatim}
+\end{framed}
+
+La première action effectuée par ce fichier est de vérifier qu'aucune configuration de bonding n'est présente, auquel cas le playbook se poursuit normalement. Il poursuit ensuite en récupérant un certain nombre de valeurs (adresses IP, noms des interfaces...) grâce aux \emph{facts }Ansible et les assigne à des variables grâce au module \emph{set\_facts}. Il pousse également un script à l'aide du module \emph{copy}. Ce script permet de déterminer quelles interfaces sont porteuses de lien afin de déterminer intelligemment lesquelles font de bons candidats pour être les esclaves du bonding.\footnote{Il doit y avoir une autre façon de dire ça, qui évoque moins les heures sombres de l'humanité...}
+
+Enfin, à la fin du fichier, il remplit des templates selon la distribution de l'hôte de virtualisation et les dépose au bon endroit (/etc/network/interfaces.d pour les Debian-like et /etc/sysconfig/network-scripts/ pout les dérivés de RedHat). Ces fichiers contiennent la configuration pour faire un bonding entre deux interfaces. Ci-dessous la template utilisée pour les Ubuntu :
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\scriptsize,numbers=left]
+auto {{ bond_slaves_main }}
+iface {{ bond_slaves_main }} inet manual
+bond_master {{ device }}
+
+auto {{ bond_slaves_fallback }}
+iface {{ bond_slaves_fallback }} inet manual
+bond_master {{ device }}
+
+
+auto {{ device }}
+iface {{ device }} inet static
+  slaves {{ bond_slaves_main }} {{ bond_slaves_fallback }}
+  bond_mode active-backup
+  bond_miimon 100
+  bond_downdelay 200
+  bond_updelay 200
+  bond_slaves none
+  address {{ bond_address }}
+  netmask {{ bond_netmask}}
+  gateway {{ bond_gateway }}
+  dns-search {{ dns_search }}
+  dns-nameservers {{ dns_nameservers }}
+
+\end{Verbatim}
+\end{framed}
+
+
+\subsubsection*{Rôle ansible-vlan}
+
+Ce module est beaucoup plus simple puisqu'il se contente de pousser des templates vers le serveur distant pour configurer un bridge et un vlan sur une interface donnée en paramètre (comme on le voit dans le playbook). Ses opérations tiennent dans un seul fichier \emph{tasks/main.yml} :
+
+
+\begin{framed}
+\begin{Verbatim}[fontsize=\tiny,numbers=left]
+---
+
+- name: "Debian | Install vlan package"
+  apt:
+    name: vlan
+    state: present
+  when: ansible_os_family|lower == "debian"
+
+- name: "Debian | Create vlan configuration file"
+  template:
+    src: 'vlan_debian'
+    dest: "{{ if_net_path[ansible_os_family|lower] }}/ifcfg-br{{ item.number }}"
+  with_items: "{{ bridge }}"
+  when: ansible_os_family|lower == "debian"
+
+- name: "RedHat | Fails when ip_vlan is defined but netmask_vlan & gw_vlan are not"
+  fail: "netmask_vlan or gw_vlan is undefined, please check"
+  when: (ip_vlan is defined and gw_vlan is undefined) or (ip_vlan is defined and netmask_vlan is undefined)
+
+- name: "RedHat | Create bridge configuration file"
+  template:
+    src: 'redhat_bridge'
+    dest: "{{ if_net_path[ansible_os_family|lower] }}/ifcfg-br{{ item.number }}"
+  with_items: "{{ bridge }}"
+  when: ansible_os_family|lower == "redhat"
+
+- name: "RedHat | Create vlan configuration file"
+  template:
+    src: 'redhat_vlan'
+    dest: "{{ if_net_path[ansible_os_family|lower] }}/ifcfg-bond0.{{ item.number }}"
+  with_items: "{{ bridge }}"
+  when: ansible_os_family|lower == "redhat"
+\end{Verbatim}
+\end{framed}
+
 \end{document}
