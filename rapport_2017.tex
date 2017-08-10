@@ -77,7 +77,7 @@ Automation, DevOps, Hosting, Linux systems
 \begin{itemize}
 \item{\textbf{Automatisation}}: Ensemble de techniques permettant le déroulement autonome d'un système, en interconnectant plusieurs élements de ce système ; Par exemple, la génération d'un fichier pdf et l'envoi de ce fichier par mail, tout ceci sans intervention directe humaine.
 
-\item{\textbf{Container}}: système d'exploitation isolé à l'intérieur d'un autre système, permettant ainsi à un hôte de virtualisation de faire tourner plusieurs systèmes sur une seule machine physique. (ex. de systèmes de conteneurisation : docker, lxc, openVZ)
+\item{\textbf{Container}}: système d'exploitation isolé à l'intérieur d'un autre système, permettant ainsi à un hôte de virtualisation (par abus de langage) de faire tourner plusieurs systèmes sur une seule machine physique. (ex. de systèmes de conteneurisation : docker, lxc, openVZ)
 
 \item{\textbf{Orchestration}}: Processus automatique d'organisation, de coordination et de gestion de systèmes informatiques, de middlewares et de services.
 
@@ -104,7 +104,7 @@ Avant de parler plus en détail des tâches que j'ai été amené à accomplir, 
 \subsubsection{Présentation générale}
 Smile est une société fondée en 1991\footnote{qui est aussi l'année du lancement du World Wide Web et de la mort de Freddy Mercury. Comme quoi.}, par Alain Arditi, Patrice Bertrand, Cyrille Chignardet et Jérôme Prompsy. La société se place à ses débuts sur le secteur des applications clients/serveur développés en mode RAD (Rapid Application Development).
 
-En 1995-6, Smile profite de la démocratisation du World Wide Web et met en place le premier site bancaire sur le web pour le compte du Crédit Lyonnais.En 2001 Smile amorce un virage et entre dans le monde de l'Open Source et continue de croître jusqu'à présente dans de multiples bureaux en France, en Espagne, en Belgique, au Luxembourg, en Suisse, au Pays-Bas, en Ukraine, en Côte-d'Ivoire et au Maroc.
+En 1995-6, Smile profite de la démocratisation du World Wide Web et met en place le premier site bancaire sur le web pour le compte du Crédit Lyonnais.En 2001 Smile amorce un virage et entre dans le monde de l'Open Source et continue de croître jusqu'à être présente dans de multiples bureaux en France, en Espagne, en Belgique, au Luxembourg, en Suisse, au Pays-Bas, en Ukraine, en Côte-d'Ivoire et au Maroc.
 
 A l'heure actuelle, Smile compte environ 1200 employés répartis dans dix-huit agences, et continue de développer son coeur de commerce sur les technologies du web (Développement web, CMS, e-commerce, décisionnaire, Cloud computing, hébergement...) mais aussi depuis peu dans l'IoT, et ce toujours en se basant sur des technologies et des logiciels Open Source.
 
@@ -116,7 +116,7 @@ On distingue trois équipes dans l'entité \emph{Smile Outsourcing} :
 \begin{itemize}
 	\item Les chefs de projet (CP), en charge du déploiement de plateforme techniques et du suivi des projets techniques ainsi que des ressources associées selon les besoins exprimés par le client.
 	\item L'équipe de production, dédiée au troubleshooting du système de production et aux demandes des clients concernant l'hébergement, ainsi qu'au traitement des tickets relevant également de ce périmètre
-	\item L'équipe Infra, que j'ai intégré pendant la durée de mon stage, dont le périmètre est plus centré sur la maintenance et l'amélioration des outils internes, du réseau de production, ainsi que des serveurs physiques, sans contact direct avec le client.
+	\item L'équipe Infra, que j'ai intégré pendant la durée de mon stage, dont le périmètre est plus centré sur tout le transverse : socle de virtualisation, industrialisation, administration du réseau etc., sans contact direct avec le client.
 \end{itemize}
 
 \chapter{Découverte du réseau de production et de la base technique}
@@ -253,7 +253,7 @@ Lors de mon arrivée chez Smile, l'équipe Infra, que j'ai intégré, était en 
 
 Jusqu'ici, le socle de virtualisation utilisé par Smile était, comme décrit plus haut, une base CentOS comme système d'exploitation, et la suite OpenVZ pour déployer des containers. Cependant, le projet OpenVZ apporte son lot de contraintes : il nécessite un kernel spécial (vzkernel) sur l'hôte de virtualisation, et son développement s'est considérablement ralenti ces dernières années. Il a donc fallu réfléchir à la mise en place d'un autre socle de virtualisation avec plus de dynamique dans son développement, et idéalement plus d'avantages que son prédécesseur.
 
-L'utilisation de containers plutôt que de machines virtuelles type KVM/QEMU s'est imposée pour des raisons de performances : L'écart de performances entre un container et un OS "bare-metal" est de l'ordre de 2 à 3\%, contre 5-6\% environ pour une machine type KVM. En termes de densité, il est possible de peupler un serveur avec 14 fois plus de containers que de KVM.
+L'utilisation de containers plutôt que de machines virtuelles type KVM/QEMU s'est imposée pour des raisons de performances : L'écart de performances réseau/CPU entre un container et un OS "bare-metal" est de l'ordre de 2 à 3\%, contre 5-6\% environ pour une machine type KVM. En termes de densité, il est possible de peupler un serveur avec 14 fois plus de containers que de KVM.
 
 Notre choix s'est porté sur l'utilisation de LinuX Containers (\emph{lxc}), avec son \emph{daemon} lxd. Ce système de conteneurisation a depuis quelques années le vent en poupe, bénéficiant d'une intégration privilégiée au noyau Linux, dont il tire profit avec des features comme les cgroups et les espaces de nommages, qui permettent d'apporter une couche supplémentaire de sécurité aux containers. 
 
@@ -484,7 +484,7 @@ Il existe aussi un repository dédié au versionning des hieradata, mais celui-c
 
 Pour synchroniser les environnements de production et de qualification, après qu'une modification de module ait fait ses preuves sur un ensemble de serveurs de tests, nous utilisons un script ruby qui se charge d'appeler un autre script pour récapituler les différences de versions entre qualification et production, ou de rajouter les modifications de qualification vers production.
 
-Lors du portage de ces scripts vers puppetmaster-v4, cependant, une partie des bibliothèques ruby utilisées ont été abandonnées. Ces scripts ayant été écrits par la même personne qui s'était chargée de la première version de l'infrastructure puppet, ce problème de bibliothque a été l'occasion de se réapproprier son fonctionnement, et de l'harmoniser avec les standards de Smile Outsourcing (des scripts en python et en bash)
+Lors du portage de ces scripts vers puppetmaster-v4, cependant, une partie des bibliothèques ruby utilisées ont été abandonnées. Ces scripts ayant été écrits par la même personne qui s'était chargée de la première version de l'infrastructure puppet, ce problème de bibliothèque a été l'occasion de se réapproprier son fonctionnement, et de l'harmoniser avec les standards de Smile Outsourcing (des scripts en python et en bash)
 
 Le script de comparaison des versions des modules puppet, basé sur le fichier metadata.json (comme vu plus haut dans la présentation de l'architecture d'un module puppet) présent dans chaque module, a donc été réécrit en bash et intégré à l'ensemble des outils Puppet.
 
